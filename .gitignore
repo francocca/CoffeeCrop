@@ -1,0 +1,16 @@
+# Documentos fuente (PDFs del manual y Cenicafé) — no son código, se guardan aparte (ver constitution.md)
+docs/
+
+# Backend Python (cuando exista)
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+
+# Entornos y secretos
+.env
+.env.*
+
+# Sistema
+.DS_Store
+Thumbs.db

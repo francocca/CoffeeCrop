@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "coffecrop-web",
+      "runtimeExecutable": "C:\\Users\\Cristian Franco\\Documents\\ProyectoCafe\\CoffeCrop\\app\\serve_web.bat",
+      "runtimeArgs": [],
+      "port": 8080
+    }
+  ]
+}

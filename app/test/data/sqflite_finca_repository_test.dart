@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_common_ffi.dart';
 
+import 'package:coffecrop/data/exceptions/finca_exceptions.dart';
 import 'package:coffecrop/data/repositories/sqflite_finca_repository.dart';
+import 'package:coffecrop/models/actividad.dart';
 import 'package:coffecrop/models/finca.dart';
 
 void main() {
@@ -93,6 +95,128 @@ void main() {
       // Assert
       expect(finca!.nombre, 'Finca Editada');
       expect(finca.numeroPlantas, 1500);
+    });
+  });
+
+  group('agregarActividad', () {
+    test('lanza NoFincaException si no hay finca registrada (BR-005)', () async {
+      // Arrange: base de datos sin finca (setUp)
+      final actividad = Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización',
+        monto: 50000,
+        fecha: DateTime(2026, 1, 1),
+        fechaCreacion: DateTime(2026, 1, 1),
+      );
+
+      // Act & Assert
+      expect(
+        () => repository.agregarActividad(actividad),
+        throwsA(isA<NoFincaException>()),
+      );
+    });
+
+    test('inserta la actividad cuando sí existe una finca', () async {
+      // Arrange
+      await repository.guardarFinca(Finca(
+        id: 'f1',
+        nombre: 'Finca El Cafetal',
+        numeroPlantas: 1700,
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      final actividad = Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización',
+        monto: 50000,
+        fecha: DateTime(2026, 1, 1),
+        fechaCreacion: DateTime(2026, 1, 1),
+      );
+
+      // Act
+      await repository.agregarActividad(actividad);
+      final actividades = await repository.listarActividades(pagina: 0);
+
+      // Assert
+      expect(actividades.length, 1);
+      expect(actividades.first.nombre, 'Fertilización');
+    });
+  });
+
+  group('calcularInversionTotal', () {
+    test('devuelve 0 cuando no hay actividades', () async {
+      // Arrange: base de datos vacía (setUp)
+
+      // Act
+      final total = await repository.calcularInversionTotal();
+
+      // Assert
+      expect(total, 0);
+    });
+
+    test('suma los montos de todas las actividades', () async {
+      // Arrange
+      await repository.guardarFinca(Finca(
+        id: 'f1',
+        nombre: 'Finca El Cafetal',
+        numeroPlantas: 1700,
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      await repository.agregarActividad(Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización',
+        monto: 50000,
+        fecha: DateTime(2026, 1, 1),
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      await repository.agregarActividad(Actividad(
+        id: 'a2',
+        fincaId: 'f1',
+        nombre: 'Control de plagas',
+        monto: 30000,
+        fecha: DateTime(2026, 1, 2),
+        fechaCreacion: DateTime(2026, 1, 2),
+      ));
+
+      // Act
+      final total = await repository.calcularInversionTotal();
+
+      // Assert
+      expect(total, 80000);
+    });
+  });
+
+  group('listarActividades', () {
+    test('pagina de a 20, ordenado por fecha descendente (DEC-004)', () async {
+      // Arrange: 25 actividades con fechas crecientes (la más nueva: día 25)
+      await repository.guardarFinca(Finca(
+        id: 'f1',
+        nombre: 'Finca El Cafetal',
+        numeroPlantas: 1700,
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      for (var i = 1; i <= 25; i++) {
+        await repository.agregarActividad(Actividad(
+          id: 'a$i',
+          fincaId: 'f1',
+          nombre: 'Actividad $i',
+          monto: 1000.0 * i,
+          fecha: DateTime(2026, 1, i),
+          fechaCreacion: DateTime(2026, 1, i),
+        ));
+      }
+
+      // Act
+      final pagina0 = await repository.listarActividades(pagina: 0);
+      final pagina1 = await repository.listarActividades(pagina: 1);
+
+      // Assert
+      expect(pagina0.length, 20);
+      expect(pagina1.length, 5);
+      expect(pagina0.first.nombre, 'Actividad 25'); // la más reciente primero
+      expect(pagina1.last.nombre, 'Actividad 1'); // la más antigua al final
     });
   });
 }

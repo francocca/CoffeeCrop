@@ -2,7 +2,10 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../models/actividad.dart';
 import '../../models/finca.dart';
+import '../exceptions/finca_exceptions.dart';
 import 'finca_repository.dart';
+
+const _tamanoPagina = 20;
 
 /// Implementación de [FincaRepository] con sqflite — ver plan.md §5 para el
 /// detalle de cada consulta SQL.
@@ -28,13 +31,24 @@ class SqfliteFincaRepository implements FincaRepository {
   }
 
   @override
-  Future<List<Actividad>> listarActividades({required int pagina}) {
-    throw UnimplementedError('Se implementa en la Tarea 7');
+  Future<List<Actividad>> listarActividades({required int pagina}) async {
+    final filas = await db.query(
+      'actividad',
+      orderBy: 'fecha DESC',
+      limit: _tamanoPagina,
+      offset: pagina * _tamanoPagina,
+    );
+    return filas.map(Actividad.fromMap).toList();
   }
 
   @override
-  Future<void> agregarActividad(Actividad actividad) {
-    throw UnimplementedError('Se implementa en la Tarea 7');
+  Future<void> agregarActividad(Actividad actividad) async {
+    final resultado = await db.rawQuery('SELECT COUNT(*) AS total FROM finca');
+    final hayFinca = (resultado.first['total'] as int) > 0;
+    if (!hayFinca) {
+      throw const NoFincaException();
+    }
+    await db.insert('actividad', actividad.toMap());
   }
 
   @override
@@ -48,7 +62,8 @@ class SqfliteFincaRepository implements FincaRepository {
   }
 
   @override
-  Future<double> calcularInversionTotal() {
-    throw UnimplementedError('Se implementa en la Tarea 7');
+  Future<double> calcularInversionTotal() async {
+    final resultado = await db.rawQuery('SELECT COALESCE(SUM(monto), 0) AS total FROM actividad');
+    return (resultado.first['total'] as num).toDouble();
   }
 }

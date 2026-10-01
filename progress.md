@@ -1,9 +1,9 @@
 # Progreso de Implementación — Gestión de la Finca Cafetera
 
 ## Resumen
-- **Tareas completadas:** 7 / 15
-- **Tarea actual:** Tarea 8 — `SqfliteFincaRepository` (editar/eliminar actividad)
-- **Tiempo invertido:** ~3h 10m
+- **Tareas completadas:** 8 / 15 — ✅ Capa de datos completa (Tareas 1-8)
+- **Tarea actual:** Tarea 9 — `FincaFormScreen`
+- **Tiempo invertido:** ~3h 35m
 
 ## Registro de Tareas
 - ✅ **Tarea 1 — Dependencias y base de datos:** ACEPTADA. `sqflite`, `path_provider`, `uuid` (+ `path` como dependencia directa, usada por `database_helper.dart`) agregadas; `DatabaseHelper.getDatabase()` creado con las sentencias `CREATE TABLE finca`/`CREATE TABLE actividad` de `plan.md` §4. Nota: la creación real del archivo `.db` se verifica end-to-end recién en la Tarea 6, cuando el repositorio lo invoque.
@@ -16,6 +16,10 @@
 - ✅ **Tarea 5 — Interfaz `FincaRepository`:** ACEPTADA. Declara los 7 métodos del contrato de `spec.md` §5.
 - ✅ **Tarea 6 — `SqfliteFincaRepository` (finca):** ACEPTADA. `obtenerFinca()`/`guardarFinca()` implementados con SQL de `plan.md` §5; 3 pruebas con base de datos en memoria (`sqflite_common_ffi`, dependencia de desarrollo agregada para esto), patrón AAA, todas en verde.
 - ✅ **Tarea 7 — `SqfliteFincaRepository` (actividades: alta, listado, total):** ACEPTADA. `agregarActividad()` valida BR-005 (`NoFincaException`), `listarActividades()` pagina de a 20 (DEC-004), `calcularInversionTotal()` usa `COALESCE`. 5 pruebas nuevas, las 9 pruebas del proyecto pasan.
+- ✅ **Tarea 8 — `SqfliteFincaRepository` (editar/eliminar):** ACEPTADA. `actualizarActividad()`/`eliminarActividad()` implementados; 4 pruebas nuevas confirman que la inversión total se recalcula tras editar y eliminar (BR-004). 13/13 pruebas del proyecto en verde.
+
+### Checkpoint — Fundación completa (Tareas 1-8)
+Toda la capa de datos (base de datos, modelos, repositorio) está implementada y probada. Falta la capa de pantallas (Tareas 9-13), que consume este repositorio.
 
 ## Registro de Rechazos
 _(se completa solo si una tarea se rechaza en la auditoría)_

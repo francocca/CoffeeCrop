@@ -219,4 +219,132 @@ void main() {
       expect(pagina1.last.nombre, 'Actividad 1'); // la más antigua al final
     });
   });
+
+  group('actualizarActividad', () {
+    test('actualiza los datos y se reflejan al volver a leer', () async {
+      // Arrange
+      await repository.guardarFinca(Finca(
+        id: 'f1',
+        nombre: 'Finca El Cafetal',
+        numeroPlantas: 1700,
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      await repository.agregarActividad(Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización',
+        monto: 50000,
+        fecha: DateTime(2026, 1, 1),
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+
+      // Act
+      await repository.actualizarActividad(Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización (corregida)',
+        monto: 60000,
+        fecha: DateTime(2026, 1, 2),
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      final actividades = await repository.listarActividades(pagina: 0);
+
+      // Assert
+      expect(actividades.length, 1);
+      expect(actividades.first.nombre, 'Fertilización (corregida)');
+      expect(actividades.first.monto, 60000);
+    });
+
+    test('la inversión total refleja el cambio tras editar (BR-004)', () async {
+      // Arrange
+      await repository.guardarFinca(Finca(
+        id: 'f1',
+        nombre: 'Finca El Cafetal',
+        numeroPlantas: 1700,
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      await repository.agregarActividad(Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización',
+        monto: 50000,
+        fecha: DateTime(2026, 1, 1),
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+
+      // Act
+      await repository.actualizarActividad(Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización',
+        monto: 80000,
+        fecha: DateTime(2026, 1, 1),
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      final total = await repository.calcularInversionTotal();
+
+      // Assert
+      expect(total, 80000);
+    });
+  });
+
+  group('eliminarActividad', () {
+    test('elimina la actividad y deja de aparecer en el listado', () async {
+      // Arrange
+      await repository.guardarFinca(Finca(
+        id: 'f1',
+        nombre: 'Finca El Cafetal',
+        numeroPlantas: 1700,
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      await repository.agregarActividad(Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización',
+        monto: 50000,
+        fecha: DateTime(2026, 1, 1),
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+
+      // Act
+      await repository.eliminarActividad('a1');
+      final actividades = await repository.listarActividades(pagina: 0);
+
+      // Assert
+      expect(actividades, isEmpty);
+    });
+
+    test('la inversión total refleja el cambio tras eliminar (BR-004)', () async {
+      // Arrange
+      await repository.guardarFinca(Finca(
+        id: 'f1',
+        nombre: 'Finca El Cafetal',
+        numeroPlantas: 1700,
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      await repository.agregarActividad(Actividad(
+        id: 'a1',
+        fincaId: 'f1',
+        nombre: 'Fertilización',
+        monto: 50000,
+        fecha: DateTime(2026, 1, 1),
+        fechaCreacion: DateTime(2026, 1, 1),
+      ));
+      await repository.agregarActividad(Actividad(
+        id: 'a2',
+        fincaId: 'f1',
+        nombre: 'Control de plagas',
+        monto: 30000,
+        fecha: DateTime(2026, 1, 2),
+        fechaCreacion: DateTime(2026, 1, 2),
+      ));
+
+      // Act
+      await repository.eliminarActividad('a1');
+      final total = await repository.calcularInversionTotal();
+
+      // Assert
+      expect(total, 30000);
+    });
+  });
 }

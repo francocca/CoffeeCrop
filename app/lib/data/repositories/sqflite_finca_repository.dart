@@ -52,13 +52,18 @@ class SqfliteFincaRepository implements FincaRepository {
   }
 
   @override
-  Future<void> actualizarActividad(Actividad actividad) {
-    throw UnimplementedError('Se implementa en la Tarea 8');
+  Future<void> actualizarActividad(Actividad actividad) async {
+    await db.update(
+      'actividad',
+      actividad.toMap(),
+      where: 'id = ?',
+      whereArgs: [actividad.id],
+    );
   }
 
   @override
-  Future<void> eliminarActividad(String id) {
-    throw UnimplementedError('Se implementa en la Tarea 8');
+  Future<void> eliminarActividad(String id) async {
+    await db.delete('actividad', where: 'id = ?', whereArgs: [id]);
   }
 
   @override

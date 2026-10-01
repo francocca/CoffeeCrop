@@ -7,7 +7,7 @@
   2. Asistente de IA que responde (a) consejos técnicos de café vía RAG sobre el Manual del Cafetero Colombiano y documentos de investigación de Cenicafé, y (b) preguntas sobre los datos propios del usuario (su finca, sus gastos, su cosecha).
 
 ## Tech Stack
-- **App (Android/iOS/Web):** Flutter (Dart)
+- **App (Android/iOS):** Flutter (Dart) — Web descartado como plataforma objetivo (decisión 2026-09-30); se puede usar `flutter build web` solo como herramienta de previsualización en desarrollo
 - **Almacenamiento local:** SQLite (`sqflite` / `drift`) — offline-first
 - **Backend / Agente IA:** Python + FastAPI
 - **Base vectorial:** PostgreSQL + pgvector (local: Docker · producción: AWS RDS)

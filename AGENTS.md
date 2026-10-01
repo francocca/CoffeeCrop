@@ -1,7 +1,7 @@
 # CoffeCrop — Agente Cafetero + Finanzas Inteligentes
 
 ## Resumen del proyecto
-App móvil (Android, iOS, Web) que combina:
+App móvil (Android, iOS) que combina:
 1. **Gestión financiera y de finca cafetera** (movimientos, presupuestos, reportes) — offline-first.
 2. **Asistente de IA (chat)** que responde dos tipos de preguntas:
    - Consejos técnicos de cultivo de café, basados en el *Manual del Cafetero Colombiano* (Cenicafé) y ~1000 documentos de investigación de Cenicafé, vía RAG (Retrieval-Augmented Generation).
@@ -20,7 +20,7 @@ App móvil (Android, iOS, Web) que combina:
 
 | Capa | Tecnología | Notas |
 |---|---|---|
-| App (Android/iOS/Web) | **Flutter (Dart)** | Elegido por el usuario, coincide con el diseño de referencia |
+| App (Android/iOS) | **Flutter (Dart)** | Elegido por el usuario, coincide con el diseño de referencia. Web descartado como plataforma objetivo (2026-09-30) — solo se usa como herramienta rápida de previsualización en desarrollo |
 | Almacenamiento local | SQLite (`sqflite` / `drift`) | Offline-first |
 | Gráficos/reportes | `fl_chart` o `syncfusion_flutter_charts` | Pantallas de Reportes/Categorías |
 | Voz a texto | `speech_to_text` | Registro por voz |
@@ -35,7 +35,7 @@ App móvil (Android, iOS, Web) que combina:
 
 ### Fase 1 — Base de la app (offline-first) — EN CURSO
 - [ ] Modelo de datos: movimientos, categorías, presupuestos, cuentas, finca (plantas, costo, actividades)
-- [x] Proyecto Flutter creado + corriendo (web y dispositivo Android real)
+- [x] Proyecto Flutter creado + corriendo en dispositivo Android real (web se usó solo como vista previa durante desarrollo, no es plataforma objetivo)
 - [x] Pantalla Inicio (dashboard) construida con datos de ejemplo (mock), verificada en tablet física
 - [ ] Pantallas: Movimientos, Reportes, Finca, Configuración
 - [ ] Conectar Inicio a SQLite real (hoy usa `lib/data/mock_home_data.dart`)
@@ -62,7 +62,7 @@ App móvil (Android, iOS, Web) que combina:
 ## Estado del entorno (verificado 2026-08-06)
 - Flutter: instalado en `C:\Flutter\flutter` (v3.44.9, channel stable), instalado por el usuario vía el asistente de VS Code. **No está en el PATH de las sesiones de terminal de este agente** — hay que anteponer `export PATH="/c/Flutter/flutter/bin:$PATH"` en Bash antes de correr comandos `flutter`.
 - Android toolchain: SDK detectado en `C:\Android\Sdk`, pero faltan las cmdline-tools y aceptar licencias (`flutter doctor --android-licenses`). No bloquea el desarrollo actual (se usa Web/Chrome), se resuelve en la Fase 4 al probar en Android real.
-- Visual Studio (Windows desktop): no instalado — no se necesita, fuera de alcance (solo Android/iOS/Web).
+- Visual Studio (Windows desktop): no instalado — no se necesita, fuera de alcance (solo Android/iOS).
 - Docker: no instalado (necesario para PostgreSQL+pgvector local)
 - Python: no instalado (necesario para el backend)
 - Node.js: instalado (v24.18.0) — no se usa como backend principal, se eligió Python para el backend. Sí se usa `npx http-server` para servir el build web de Flutter en el navegador.
@@ -78,8 +78,10 @@ CoffeCrop/
     app/serve_web.bat       # sirve el build web estático (flutter build web + npx http-server)
 ```
 
-## Nota técnica: previsualización web
-`flutter run -d web-server` falla al iniciar (el cliente de debug inyectado por DWDS tira un error de deserialización y la app nunca monta el `flt-glass-pane`). Workaround estable: `flutter build web` (build estático de release) servido con `npx http-server` en el puerto 8080 — así se puede verificar visualmente cada cambio en el navegador.
+## Nota técnica: previsualización web (solo herramienta de desarrollo)
+**Web no es una plataforma objetivo del producto** (decisión 2026-09-30, solo Android/iOS) — pero se sigue usando `flutter build web` como atajo para verificar visualmente cambios de UI en el navegador durante el desarrollo, mucho más rápido que compilar para Android cada vez. Ningún dato persistido en SQLite funcionará ahí (ver `plan.md` de Gestión de la Finca — sqflite no soporta Web), así que esta vía solo sirve para revisar layout/estilos con datos de ejemplo, no funcionalidad real.
+
+`flutter run -d web-server` falla al iniciar (el cliente de debug inyectado por DWDS tira un error de deserialización y la app nunca monta el `flt-glass-pane`). Workaround estable: `flutter build web` (build estático de release) servido con `npx http-server` en el puerto 8080.
 
 ## Nota técnica: prueba en dispositivo Android real
 El usuario tiene una tablet Samsung Galaxy (SM X400, Android 16) conectada por USB, usada para ver los cambios en vivo mientras se construye la app. Detalles:

@@ -1,9 +1,9 @@
 # Progreso de Implementación — Gestión de la Finca Cafetera
 
 ## Resumen
-- **Tareas completadas:** 8 / 15 — ✅ Capa de datos completa (Tareas 1-8)
-- **Tarea actual:** Tarea 9 — `FincaFormScreen`
-- **Tiempo invertido:** ~3h 35m
+- **Tareas completadas:** 9 / 15 — ✅ Capa de datos completa (Tareas 1-8)
+- **Tarea actual:** Tarea 10 — `HomeScreen` con datos reales
+- **Tiempo invertido:** ~4h 10m
 
 ## Registro de Tareas
 - ✅ **Tarea 1 — Dependencias y base de datos:** ACEPTADA. `sqflite`, `path_provider`, `uuid` (+ `path` como dependencia directa, usada por `database_helper.dart`) agregadas; `DatabaseHelper.getDatabase()` creado con las sentencias `CREATE TABLE finca`/`CREATE TABLE actividad` de `plan.md` §4. Nota: la creación real del archivo `.db` se verifica end-to-end recién en la Tarea 6, cuando el repositorio lo invoque.
@@ -20,6 +20,8 @@
 
 ### Checkpoint — Fundación completa (Tareas 1-8)
 Toda la capa de datos (base de datos, modelos, repositorio) está implementada y probada. Falta la capa de pantallas (Tareas 9-13), que consume este repositorio.
+
+- ✅ **Tarea 9 — `FincaFormScreen`:** ACEPTADA. Formulario de crear/editar finca (US-001), validación en vivo, maneja `InvalidFarmDataException`. **Gap señalado:** sin prueba de widget dedicada (no estaba en `tasks.md`, solo pruebas de validadores en la Tarea 14) — pendiente de decisión si se agrega.
 
 ## Registro de Rechazos
 _(se completa solo si una tarea se rechaza en la auditoría)_

@@ -1,9 +1,9 @@
 # Progreso de Implementación — Gestión de la Finca Cafetera
 
 ## Resumen
-- **Tareas completadas:** 11 / 15 — ✅ Capa de datos completa (Tareas 1-8)
-- **Tarea actual:** Tarea 12 — `ActividadesListScreen` (listado paginado + eliminar)
-- **Tiempo invertido:** ~6h
+- **Tareas completadas:** 12 / 15 — ✅ Capa de datos completa (Tareas 1-8)
+- **Tarea actual:** Tarea 13 — conectar Inicio con actividades reales y navegación
+- **Tiempo invertido:** ~6h 45m
 
 ## Registro de Tareas
 - ✅ **Tarea 1 — Dependencias y base de datos:** ACEPTADA. `sqflite`, `path_provider`, `uuid` (+ `path` como dependencia directa, usada por `database_helper.dart`) agregadas; `DatabaseHelper.getDatabase()` creado con las sentencias `CREATE TABLE finca`/`CREATE TABLE actividad` de `plan.md` §4. Nota: la creación real del archivo `.db` se verifica end-to-end recién en la Tarea 6, cuando el repositorio lo invoque.
@@ -32,6 +32,11 @@ Toda la capa de datos (base de datos, modelos, repositorio) está implementada y
 - ✅ **Tarea 11 — `ActividadFormScreen`: ACEPTADA (2026-10-14).** Formulario crear/editar actividad (US-003, US-005): nombre, monto y fecha (por defecto hoy, con selector); sin finca bloquea el registro con mensaje y botón a `FincaFormScreen` (BR-005, DEC-003); modo edición precarga y actualiza; errores de validación por campo (BR-003). 5 pruebas de widget nuevas con `FakeFincaRepository`; 19/19 en verde, `flutter analyze` limpio. Rama: `feat/task-11-actividad-form`.
   - **Interpretación:** `tasks.md` dice "redirige a `FincaFormScreen`"; se implementó como mensaje bloqueante + botón (lo que dice DEC-003), no redirección automática.
   - **Pendiente de DoD:** verificación en dispositivo real diferida a la Tarea 13 (la pantalla aún no es alcanzable: el botón "+" se conecta ahí).
+
+- ✅ **Tarea 12 — `ActividadesListScreen`: ACEPTADA (2026-10-14).** Listado "Ver todas" (US-004, US-005): paginado de a 20 con carga al acercarse al final (DEC-004), estado vacío, tocar abre `ActividadFormScreen` en edición, eliminar con diálogo de confirmación; tras editar/eliminar se recargan las páginas ya cargadas (conserva el scroll sin saltar ni repetir filas). 8 pruebas nuevas (5 de widget + 3 unitarias de `formatearHace`); 27/27 en verde, `flutter analyze` limpio. Rama: `feat/task-12-actividades-list`.
+  - **Fuera de la lista de archivos de la tarea (justificado):** constante compartida `tamanoPaginaActividades` en `finca_repository.dart` (la pantalla necesita el tamaño de página para saber si hay más; antes era privada en el repositorio SQLite, también actualizado junto con el fake de pruebas); helper `formatearHace` en `utils/formatters.dart` ("Hoy" / "Ayer" / "Hace N días").
+  - **Seguimiento para la Tarea 13:** `ActividadesCard` (Inicio) todavía muestra "Hace N días" sin los casos Hoy/Ayer — alinearlo con `formatearHace` al tocar ese widget.
+  - **Pendiente de DoD:** verificación en dispositivo real diferida a la Tarea 13 (la pantalla aún no es alcanzable).
 
 ## Registro de Rechazos
 _(se completa solo si una tarea se rechaza en la auditoría)_

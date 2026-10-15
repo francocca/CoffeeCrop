@@ -19,7 +19,10 @@ class FakeFincaRepository implements FincaRepository {
   @override
   Future<List<Actividad>> listarActividades({required int pagina}) async {
     final ordenadas = [...actividades]..sort((a, b) => b.fecha.compareTo(a.fecha));
-    return ordenadas.skip(pagina * 20).take(20).toList();
+    return ordenadas
+        .skip(pagina * tamanoPaginaActividades)
+        .take(tamanoPaginaActividades)
+        .toList();
   }
 
   @override

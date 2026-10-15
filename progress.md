@@ -1,9 +1,9 @@
 # Progreso de Implementación — Gestión de la Finca Cafetera
 
 ## Resumen
-- **Tareas completadas:** 13 / 15 — ✅ Capa de datos completa (Tareas 1-8) · ✅ Pantallas completas (Tareas 9-13)
-- **Tarea actual:** Tarea 14 — pruebas de validadores de los modelos
-- **Tiempo invertido:** ~7h 30m
+- **Tareas completadas:** 14 / 15 — ✅ Capa de datos (Tareas 1-8) · ✅ Pantallas (Tareas 9-13) · ✅ Pruebas de validadores (Tarea 14)
+- **Tarea actual:** Tarea 15 — cierre de Fase 1
+- **Tiempo invertido:** ~8h
 
 ## Registro de Tareas
 - ✅ **Tarea 1 — Dependencias y base de datos:** ACEPTADA. `sqflite`, `path_provider`, `uuid` (+ `path` como dependencia directa, usada por `database_helper.dart`) agregadas; `DatabaseHelper.getDatabase()` creado con las sentencias `CREATE TABLE finca`/`CREATE TABLE actividad` de `plan.md` §4. Nota: la creación real del archivo `.db` se verifica end-to-end recién en la Tarea 6, cuando el repositorio lo invoque.
@@ -40,6 +40,8 @@ Toda la capa de datos (base de datos, modelos, repositorio) está implementada y
 
 - ✅ **Tarea 13 — Inicio con actividades reales y navegación: ACEPTADA (2026-10-14).** El botón "+" abre `ActividadFormScreen`; "Ver todas las actividades" abre `ActividadesListScreen`; al volver de cualquiera de las dos Inicio se actualiza solo (BR-004) sin spinner de pantalla completa ni perder el scroll (señal `recargar` de `HomeShell` hacia `HomeScreen`, sin paquetes nuevos de manejo de estado, según `plan.md` §5). Inicio refresca siempre al volver (no solo al guardar) porque el formulario puede haber creado la finca (BR-005) sin registrar actividad. `ActividadesCard` ahora recibe `Actividad` reales (se eliminó `ActividadFinca`), usa `formatearHace` ("Hoy"/"Ayer"/"Hace N días") y tiene estado vacío (US-004). 5 pruebas de navegación nuevas; 32/32 en verde, `flutter analyze` limpio. Rama: `feat/task-13-home-navigation`.
   - **Verificado en la tablet Galaxy (SM X400) por el usuario:** flujo completo — crear finca, registrar/editar/eliminar actividades, "Ver todas", actualización de Inicio y persistencia al cerrar y reabrir. Esto cierra los pendientes de DoD de las Tareas 11 y 12 y confirma end-to-end la creación real de `coffecrop.db` (pendiente desde la Tarea 1).
+
+- ✅ **Tarea 14 — Pruebas de validadores: ACEPTADA (2026-10-14).** 22 pruebas unitarias nuevas en `test/models/finca_test.dart` (10) y `actividad_test.dart` (12), patrón AAA: casos válidos incluyendo los límites exactos (nombre de 100 caracteres, 1 planta, monto 0, fecha de hoy); rechazos por nombre vacío/solo espacios/101 caracteres, plantas ≤ 0, monto negativo y fecha futura, verificando el tipo de excepción y que el mensaje nombre el campo; `toMap`/`fromMap` (incluye `monto` entero que SQLite puede devolver para REAL). 54/54 en verde, `flutter analyze` limpio. Rama: `test/task-14-validator-tests`. Cierra la nota pendiente de las Tareas 3 y 4 (pruebas de validadores diferidas aquí).
 
 ## Registro de Rechazos
 _(se completa solo si una tarea se rechaza en la auditoría)_

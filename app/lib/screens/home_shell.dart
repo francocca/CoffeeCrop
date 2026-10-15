@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/repositories/finca_repository.dart';
 import '../theme/app_colors.dart';
+import 'actividad_form_screen.dart';
 import 'home_screen.dart';
 import 'placeholder_screen.dart';
 
@@ -16,22 +17,38 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
+  final _recargarInicio = ValueNotifier<int>(0);
 
   late final _screens = [
-    HomeScreen(repository: widget.repository),
+    HomeScreen(repository: widget.repository, recargar: _recargarInicio),
     const PlaceholderScreen(titulo: 'Movimientos'),
     const PlaceholderScreen(titulo: 'Reportes'),
     const PlaceholderScreen(titulo: 'Asistente IA'),
   ];
 
+  @override
+  void dispose() {
+    _recargarInicio.dispose();
+    super.dispose();
+  }
+
   void _onTap(int index) => setState(() => _index = index);
+
+  /// Se refresca Inicio siempre al volver, no solo al guardar: el formulario
+  /// puede haber creado la finca (BR-005) sin llegar a registrar la actividad.
+  Future<void> _registrarActividad() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ActividadFormScreen(repository: widget.repository)),
+    );
+    _recargarInicio.value++;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _index, children: _screens),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _registrarActividad,
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 28),

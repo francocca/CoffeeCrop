@@ -1,27 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../models/actividad.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
 
-/// Modelo liviano para mostrar una actividad en esta tarjeta — no es la
-/// entidad de dominio [Actividad] (ver lib/models/actividad.dart), que tiene
-/// una fecha completa; acá ya viene calculado "hace cuántos días".
-class ActividadFinca {
-  final String nombre;
-  final int diasAtras;
-  final double monto;
-
-  const ActividadFinca({
-    required this.nombre,
-    required this.diasAtras,
-    required this.monto,
-  });
-}
-
 class ActividadesCard extends StatelessWidget {
-  final List<ActividadFinca> actividades;
+  final List<Actividad> actividades;
+  final VoidCallback onVerTodas;
 
-  const ActividadesCard({super.key, required this.actividades});
+  const ActividadesCard({
+    super.key,
+    required this.actividades,
+    required this.onVerTodas,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,14 +30,24 @@ class ActividadesCard extends StatelessWidget {
             'Últimas actividades',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
-          for (final actividad in actividades) _ActividadTile(actividad: actividad),
-          const SizedBox(height: 4),
-          Center(
-            child: TextButton(
-              onPressed: () {},
-              child: const Text('Ver todas las actividades'),
+          if (actividades.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'Todavía no registraste actividades. Tocá el botón + para agregar la primera.',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+            )
+          else ...[
+            for (final actividad in actividades) _ActividadTile(actividad: actividad),
+            const SizedBox(height: 4),
+            Center(
+              child: TextButton(
+                onPressed: onVerTodas,
+                child: const Text('Ver todas las actividades'),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -54,7 +55,7 @@ class ActividadesCard extends StatelessWidget {
 }
 
 class _ActividadTile extends StatelessWidget {
-  final ActividadFinca actividad;
+  final Actividad actividad;
 
   const _ActividadTile({required this.actividad});
 
@@ -79,7 +80,10 @@ class _ActividadTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(actividad.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                Text('Hace ${actividad.diasAtras} días', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  formatearHace(actividad.fecha),
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
               ],
             ),
           ),

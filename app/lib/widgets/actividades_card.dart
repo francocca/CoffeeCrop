@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_finca_data.dart';
 import '../theme/app_colors.dart';
 import '../utils/formatters.dart';
+
+/// Modelo liviano para mostrar una actividad en esta tarjeta — no es la
+/// entidad de dominio [Actividad] (ver lib/models/actividad.dart), que tiene
+/// una fecha completa; acá ya viene calculado "hace cuántos días".
+class ActividadFinca {
+  final String nombre;
+  final int diasAtras;
+  final double monto;
+
+  const ActividadFinca({
+    required this.nombre,
+    required this.diasAtras,
+    required this.monto,
+  });
+}
 
 class ActividadesCard extends StatelessWidget {
   final List<ActividadFinca> actividades;

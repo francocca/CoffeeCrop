@@ -1,9 +1,9 @@
 # Progreso de Implementación — Gestión de la Finca Cafetera
 
 ## Resumen
-- **Tareas completadas:** 9 / 15 — ✅ Capa de datos completa (Tareas 1-8)
-- **Tarea actual:** Tarea 10 — `HomeScreen` con datos reales
-- **Tiempo invertido:** ~4h 10m
+- **Tareas completadas:** 10 / 15 — ✅ Capa de datos completa (Tareas 1-8)
+- **Tarea actual:** Tarea 11 — `ActividadFormScreen`
+- **Tiempo invertido:** ~5h 15m
 
 ## Registro de Tareas
 - ✅ **Tarea 1 — Dependencias y base de datos:** ACEPTADA. `sqflite`, `path_provider`, `uuid` (+ `path` como dependencia directa, usada por `database_helper.dart`) agregadas; `DatabaseHelper.getDatabase()` creado con las sentencias `CREATE TABLE finca`/`CREATE TABLE actividad` de `plan.md` §4. Nota: la creación real del archivo `.db` se verifica end-to-end recién en la Tarea 6, cuando el repositorio lo invoque.
@@ -22,6 +22,12 @@
 Toda la capa de datos (base de datos, modelos, repositorio) está implementada y probada. Falta la capa de pantallas (Tareas 9-13), que consume este repositorio.
 
 - ✅ **Tarea 9 — `FincaFormScreen`:** ACEPTADA. Formulario de crear/editar finca (US-001), validación en vivo, maneja `InvalidFarmDataException`. **Gap señalado:** sin prueba de widget dedicada (no estaba en `tasks.md`, solo pruebas de validadores en la Tarea 14) — pendiente de decisión si se agrega.
+- ✅ **Tarea 10 — `HomeScreen` con datos reales: ACEPTADA (2026-10-14).** El bloqueo del test se resolvió usando `FakeFincaRepository` (en memoria, sin I/O real, en `test/fakes/`) en vez de sqflite dentro de `testWidgets`; 2 pruebas de widget nuevas (estado vacío, y finca + actividades reales sin "Costo por planta"). 14/14 pruebas en verde, `flutter analyze` limpio. Historial del bloqueo:
+  - Código escrito y `flutter analyze` pasa limpio: `main.dart` crea la base de datos real y el repositorio al arrancar; `home_shell.dart`/`home_screen.dart` reciben el repositorio inyectado; `FincaCard` ya no tiene "Costo por planta" (DEC-006); `ActividadFinca` se movió de `mock_finca_data.dart` (eliminado) a `actividades_card.dart`; Inicio ahora muestra estado vacío (si no hay finca) o los datos reales (finca + inversión total + actividades recientes).
+  - **Bug pendiente sin resolver:** el `widget_test.dart` actualizado (que ahora necesita una base de datos real en memoria, porque `CoffeCropApp` requiere el repositorio) se queda colgado indefinidamente — probablemente porque el `CircularProgressIndicator` del estado de carga tiene una animación infinita que no deja asentar la prueba, combinado con que las operaciones async reales de sqflite no completan correctamente dentro de la zona "fake async" de `testWidgets`. Se probaron dos intentos con `tester.runAsync()` sin éxito; quedó colgado las dos veces (hubo que matar procesos `dart`/`flutter_tester` manualmente ambas veces).
+  - **Las 12 pruebas del repositorio (Tareas 6-8) siguen pasando bien** cuando corren solas — el problema es específico de este nuevo widget test.
+  - **Próximo paso sugerido:** en vez de seguir peleando con `runAsync`, probablemente lo más simple sea testear `HomeScreen` con un `FincaRepository` falso/en memoria (un fake de Dart puro, sin sqflite real) en vez de `SqfliteFincaRepository` + base de datos FFI — así no hay I/O real que choque con la zona fake-async de las pruebas de widgets.
+  - **No se subió nada al repo** de este trabajo — queda como cambios locales sin commitear hasta resolver el bloqueo y confirmar que todo pasa.
 
 ## Registro de Rechazos
 _(se completa solo si una tarea se rechaza en la auditoría)_

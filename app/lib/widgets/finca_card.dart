@@ -7,14 +7,12 @@ class FincaCard extends StatelessWidget {
   final String nombre;
   final int numeroPlantas;
   final double inversionTotal;
-  final double costoPorPlanta;
 
   const FincaCard({
     super.key,
     required this.nombre,
     required this.numeroPlantas,
     required this.inversionTotal,
-    required this.costoPorPlanta,
   });
 
   @override
@@ -72,13 +70,7 @@ class FincaCard extends StatelessWidget {
               border: Border(top: BorderSide(color: Colors.white24)),
             ),
             padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(
-              children: [
-                Expanded(child: _StatColumn(label: 'Inversión total', value: inversionTotal)),
-                Container(width: 1, height: 30, color: Colors.white24, margin: const EdgeInsets.symmetric(horizontal: 8)),
-                Expanded(child: _StatColumn(label: 'Costo por planta', value: costoPorPlanta)),
-              ],
-            ),
+            child: _StatColumn(label: 'Inversión total', value: inversionTotal),
           ),
         ],
       ),

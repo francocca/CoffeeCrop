@@ -1,9 +1,9 @@
 # Progreso de Implementación — Gestión de la Finca Cafetera
 
 ## Resumen
-- **Tareas completadas:** 14 / 15 — ✅ Capa de datos (Tareas 1-8) · ✅ Pantallas (Tareas 9-13) · ✅ Pruebas de validadores (Tarea 14)
-- **Tarea actual:** Tarea 15 — cierre de Fase 1
-- **Tiempo invertido:** ~8h
+- **Tareas completadas:** 15 / 15 — ✅ **FASE 1 CERRADA (2026-10-14)**
+- **Tarea actual:** ninguna — siguiente trabajo: Fase 3 (spec de la base de conocimiento cafetero), ver `AGENTS.md`
+- **Tiempo invertido:** ~8h 15m
 
 ## Registro de Tareas
 - ✅ **Tarea 1 — Dependencias y base de datos:** ACEPTADA. `sqflite`, `path_provider`, `uuid` (+ `path` como dependencia directa, usada por `database_helper.dart`) agregadas; `DatabaseHelper.getDatabase()` creado con las sentencias `CREATE TABLE finca`/`CREATE TABLE actividad` de `plan.md` §4. Nota: la creación real del archivo `.db` se verifica end-to-end recién en la Tarea 6, cuando el repositorio lo invoque.
@@ -42,6 +42,20 @@ Toda la capa de datos (base de datos, modelos, repositorio) está implementada y
   - **Verificado en la tablet Galaxy (SM X400) por el usuario:** flujo completo — crear finca, registrar/editar/eliminar actividades, "Ver todas", actualización de Inicio y persistencia al cerrar y reabrir. Esto cierra los pendientes de DoD de las Tareas 11 y 12 y confirma end-to-end la creación real de `coffecrop.db` (pendiente desde la Tarea 1).
 
 - ✅ **Tarea 14 — Pruebas de validadores: ACEPTADA (2026-10-14).** 22 pruebas unitarias nuevas en `test/models/finca_test.dart` (10) y `actividad_test.dart` (12), patrón AAA: casos válidos incluyendo los límites exactos (nombre de 100 caracteres, 1 planta, monto 0, fecha de hoy); rechazos por nombre vacío/solo espacios/101 caracteres, plantas ≤ 0, monto negativo y fecha futura, verificando el tipo de excepción y que el mensaje nombre el campo; `toMap`/`fromMap` (incluye `monto` entero que SQLite puede devolver para REAL). 54/54 en verde, `flutter analyze` limpio. Rama: `test/task-14-validator-tests`. Cierra la nota pendiente de las Tareas 3 y 4 (pruebas de validadores diferidas aquí).
+
+- ✅ **Tarea 15 — Cierre de Fase 1: ACEPTADA (2026-10-14).** `AGENTS.md` actualizado: Fase 1 marcada cerrada con lo hecho y lo aplazado, entorno re-verificado (ahora con Docker y Python instalados, Android completo), estructura real del proyecto, decisiones nuevas (sqflite, datos de la finca locales, pruebas con repositorio falso, sin costo por planta) y próximos pasos hacia la Fase 3. Rama: `docs/phase-1-closeout`.
+
+## Cierre de Fase 1 — resumen
+- **Resultado:** 15/15 tareas aceptadas; 54 pruebas automáticas en verde; `flutter analyze` limpio; flujo completo verificado por el usuario en la tablet Galaxy (SM X400). Las Tareas 10-14 entraron a `main` por los PRs #1–#5; las Tareas 1-9 se commitearon directo a `main` antes de adoptar el flujo de ramas (ver pendiente 5).
+- **Decisiones del usuario durante la fase:** Flutter; Android/iOS solamente (Web descartado); sqflite sobre drift; una finca por instalación; paginación de a 20 desde el inicio; sin costo por planta; Fase 3 como siguiente prioridad; cierre de Fase 1 dejando Movimientos/Reportes/Configuración como placeholders.
+- **Lecciones:** (1) un test de widget con sqflite real se colgó — se resolvió con un repositorio falso en memoria; (2) la verificación en dispositivo detectó un problema de disco lleno que no era del código; (3) agregar la regla "una rama y PR por tarea" a `constitution.md` evitó trabajar directo sobre `main`.
+
+### Pendientes y gaps abiertos (no bloquean el cierre, quedan registrados)
+1. **Editar la finca no tiene punto de entrada en la UI:** `FincaFormScreen` ya soporta el modo edición y `guardarFinca` reemplaza por id, pero ningún botón lo abre (el botón ⋮ de Inicio no hace nada). Spec US-001 habla de "registrar"; decidir si se agrega.
+2. **`FincaFormScreen` sin prueba de widget dedicada** (gap señalado en la Tarea 9; la lógica de validación sí está cubierta por las pruebas de `Finca`).
+3. **Pestañas Movimientos, Reportes y Configuración** siguen siendo placeholders (aplazado a propósito).
+4. **Biometría y cifrado local** → Fase 4 (DEC-005).
+5. **Las Tareas 1-9 se commitearon directo a `main`** (antes de que existiera la convención de ramas y PRs); desde la Tarea 10 todo entra por PR.
 
 ## Registro de Rechazos
 _(se completa solo si una tarea se rechaza en la auditoría)_

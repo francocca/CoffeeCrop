@@ -1,9 +1,9 @@
 # Progreso de Implementación — Gestión de la Finca Cafetera
 
 ## Resumen
-- **Tareas completadas:** 12 / 15 — ✅ Capa de datos completa (Tareas 1-8)
-- **Tarea actual:** Tarea 13 — conectar Inicio con actividades reales y navegación
-- **Tiempo invertido:** ~6h 45m
+- **Tareas completadas:** 13 / 15 — ✅ Capa de datos completa (Tareas 1-8) · ✅ Pantallas completas (Tareas 9-13)
+- **Tarea actual:** Tarea 14 — pruebas de validadores de los modelos
+- **Tiempo invertido:** ~7h 30m
 
 ## Registro de Tareas
 - ✅ **Tarea 1 — Dependencias y base de datos:** ACEPTADA. `sqflite`, `path_provider`, `uuid` (+ `path` como dependencia directa, usada por `database_helper.dart`) agregadas; `DatabaseHelper.getDatabase()` creado con las sentencias `CREATE TABLE finca`/`CREATE TABLE actividad` de `plan.md` §4. Nota: la creación real del archivo `.db` se verifica end-to-end recién en la Tarea 6, cuando el repositorio lo invoque.
@@ -37,6 +37,9 @@ Toda la capa de datos (base de datos, modelos, repositorio) está implementada y
   - **Fuera de la lista de archivos de la tarea (justificado):** constante compartida `tamanoPaginaActividades` en `finca_repository.dart` (la pantalla necesita el tamaño de página para saber si hay más; antes era privada en el repositorio SQLite, también actualizado junto con el fake de pruebas); helper `formatearHace` en `utils/formatters.dart` ("Hoy" / "Ayer" / "Hace N días").
   - **Seguimiento para la Tarea 13:** `ActividadesCard` (Inicio) todavía muestra "Hace N días" sin los casos Hoy/Ayer — alinearlo con `formatearHace` al tocar ese widget.
   - **Pendiente de DoD:** verificación en dispositivo real diferida a la Tarea 13 (la pantalla aún no es alcanzable).
+
+- ✅ **Tarea 13 — Inicio con actividades reales y navegación: ACEPTADA (2026-10-14).** El botón "+" abre `ActividadFormScreen`; "Ver todas las actividades" abre `ActividadesListScreen`; al volver de cualquiera de las dos Inicio se actualiza solo (BR-004) sin spinner de pantalla completa ni perder el scroll (señal `recargar` de `HomeShell` hacia `HomeScreen`, sin paquetes nuevos de manejo de estado, según `plan.md` §5). Inicio refresca siempre al volver (no solo al guardar) porque el formulario puede haber creado la finca (BR-005) sin registrar actividad. `ActividadesCard` ahora recibe `Actividad` reales (se eliminó `ActividadFinca`), usa `formatearHace` ("Hoy"/"Ayer"/"Hace N días") y tiene estado vacío (US-004). 5 pruebas de navegación nuevas; 32/32 en verde, `flutter analyze` limpio. Rama: `feat/task-13-home-navigation`.
+  - **Verificado en la tablet Galaxy (SM X400) por el usuario:** flujo completo — crear finca, registrar/editar/eliminar actividades, "Ver todas", actualización de Inicio y persistencia al cerrar y reabrir. Esto cierra los pendientes de DoD de las Tareas 11 y 12 y confirma end-to-end la creación real de `coffecrop.db` (pendiente desde la Tarea 1).
 
 ## Registro de Rechazos
 _(se completa solo si una tarea se rechaza en la auditoría)_

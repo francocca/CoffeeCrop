@@ -1,38 +1,54 @@
 import 'package:flutter/material.dart';
 
 import '../data/repositories/finca_repository.dart';
+import '../models/actividad.dart';
 import '../models/finca.dart';
 import '../theme/app_colors.dart';
 import '../widgets/actividades_card.dart';
 import '../widgets/finca_card.dart';
+import 'actividades_list_screen.dart';
 import 'finca_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final FincaRepository repository;
 
-  const HomeScreen({super.key, required this.repository});
+  /// Avisa que los datos pudieron cambiar fuera de esta pantalla (por ejemplo,
+  /// tras registrar una actividad desde el botón "+" de la barra inferior).
+  final Listenable? recargar;
+
+  const HomeScreen({super.key, required this.repository, this.recargar});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const _actividadesEnInicio = 4;
+
   Finca? _finca;
   double _inversionTotal = 0;
-  List<ActividadFinca> _actividadesRecientes = [];
+  List<Actividad> _actividadesRecientes = [];
   bool _cargando = true;
 
   @override
   void initState() {
     super.initState();
+    widget.recargar?.addListener(_cargarDatos);
     _cargarDatos();
   }
 
-  Future<void> _cargarDatos() async {
-    setState(() => _cargando = true);
+  @override
+  void dispose() {
+    widget.recargar?.removeListener(_cargarDatos);
+    super.dispose();
+  }
 
+  /// El spinner de pantalla completa solo se ve en la primera carga; al
+  /// refrescar se mantiene el contenido y se actualiza en el lugar.
+  Future<void> _cargarDatos() async {
     final finca = await widget.repository.obtenerFinca();
     if (finca == null) {
+      if (!mounted) return;
       setState(() {
         _finca = null;
         _cargando = false;
@@ -42,18 +58,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final inversionTotal = await widget.repository.calcularInversionTotal();
     final actividades = await widget.repository.listarActividades(pagina: 0);
+    if (!mounted) return;
 
     setState(() {
       _finca = finca;
       _inversionTotal = inversionTotal;
-      _actividadesRecientes = actividades.take(4).map((actividad) {
-        final diasAtras = DateTime.now().difference(actividad.fecha).inDays;
-        return ActividadFinca(
-          nombre: actividad.nombre,
-          diasAtras: diasAtras,
-          monto: actividad.monto,
-        );
-      }).toList();
+      _actividadesRecientes = actividades.take(_actividadesEnInicio).toList();
       _cargando = false;
     });
   }
@@ -62,7 +72,14 @@ class _HomeScreenState extends State<HomeScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => FincaFormScreen(repository: widget.repository)),
     );
-    _cargarDatos();
+    await _cargarDatos();
+  }
+
+  Future<void> _verTodasLasActividades() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ActividadesListScreen(repository: widget.repository)),
+    );
+    await _cargarDatos();
   }
 
   @override
@@ -103,7 +120,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         inversionTotal: _inversionTotal,
                       ),
                       const SizedBox(height: 16),
-                      ActividadesCard(actividades: _actividadesRecientes),
+                      ActividadesCard(
+                        actividades: _actividadesRecientes,
+                        onVerTodas: _verTodasLasActividades,
+                      ),
                     ],
                   ),
       ),

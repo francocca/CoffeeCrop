@@ -5,8 +5,6 @@ import '../../models/finca.dart';
 import '../exceptions/finca_exceptions.dart';
 import 'finca_repository.dart';
 
-const _tamanoPagina = 20;
-
 /// Implementación de [FincaRepository] con sqflite — ver plan.md §5 para el
 /// detalle de cada consulta SQL.
 class SqfliteFincaRepository implements FincaRepository {
@@ -35,8 +33,8 @@ class SqfliteFincaRepository implements FincaRepository {
     final filas = await db.query(
       'actividad',
       orderBy: 'fecha DESC',
-      limit: _tamanoPagina,
-      offset: pagina * _tamanoPagina,
+      limit: tamanoPaginaActividades,
+      offset: pagina * tamanoPaginaActividades,
     );
     return filas.map(Actividad.fromMap).toList();
   }

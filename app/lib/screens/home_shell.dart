@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../data/repositories/finca_repository.dart';
 import '../theme/app_colors.dart';
 import 'home_screen.dart';
 import 'placeholder_screen.dart';
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  final FincaRepository repository;
+
+  const HomeShell({super.key, required this.repository});
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -14,11 +17,11 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  static const _screens = [
-    HomeScreen(),
-    PlaceholderScreen(titulo: 'Movimientos'),
-    PlaceholderScreen(titulo: 'Reportes'),
-    PlaceholderScreen(titulo: 'Asistente IA'),
+  late final _screens = [
+    HomeScreen(repository: widget.repository),
+    const PlaceholderScreen(titulo: 'Movimientos'),
+    const PlaceholderScreen(titulo: 'Reportes'),
+    const PlaceholderScreen(titulo: 'Asistente IA'),
   ];
 
   void _onTap(int index) => setState(() => _index = index);

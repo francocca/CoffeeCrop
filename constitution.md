@@ -57,6 +57,7 @@
 - Nunca guardar el corpus de PDFs como blobs dentro de PostgreSQL.
 - Nunca agregar funcionalidades de finanzas generales del hogar (patrimonio, ingresos/gastos genéricos) — fuera de alcance.
 - Nunca aprovisionar recursos de AWS con costo asociado sin confirmación explícita del usuario.
+- Nunca hacer commit ni push directo a `main`, ni mergear PRs: todo va en una rama y el humano crea y mergea el PR (ver "Flujo de Git y Pull Requests").
 
 ## Estilo de Código
 - **Dart/Flutter:** `lowerCamelCase` para variables/funciones, `PascalCase` para clases/widgets, archivos en `snake_case`.
@@ -101,3 +102,36 @@ Este proyecto sigue Spec-Driven Development. Jerarquía de artefactos:
 5. **`progress.md`** — registro de avance tarea por tarea.
 
 `AGENTS.md` se mantiene como el resumen vivo de alto nivel (fases del producto completo, estado del entorno); los artefactos de SDD (`spec.md`, `plan.md`, `tasks.md`) se usan por feature/fase para el desarrollo guiado por especificación.
+
+## Buenas prácticas de SDD
+- **Spec primero:** ningún cambio de comportamiento se implementa sin estar en `spec.md`. Si aparece algo no especificado, se actualiza la spec (y el Decision Log) *antes* de escribir código; si ya se escribió código sin spec, se revierte o se especifica de inmediato (corregir el *drift*).
+- **Trazabilidad:** cada tarea de `tasks.md` referencia las user stories (US-xxx), reglas de negocio (BR-xxx) y decisiones (DEC-xxx) que implementa; los commits y PRs las citan.
+- **Una tarea a la vez:** se implementa solo lo que dice la tarea. Lo que surja fuera de alcance se anota en `progress.md` (o como nueva tarea), no se mezcla.
+- **Definición de Hecho (DoD)** de una tarea — todas deben cumplirse:
+  - [ ] Criterios de aceptación de la tarea cumplidos.
+  - [ ] `flutter analyze` sin errores ni avisos.
+  - [ ] Pruebas de la lógica nueva escritas y `flutter test` en verde.
+  - [ ] Sin violaciones de los límites de esta constitución (secretos, dependencias sin aprobar, alcance).
+  - [ ] Cambios de UI verificados en pantalla (dispositivo real).
+  - [ ] `progress.md` actualizado (estado, decisiones, gaps); `spec.md`/`plan.md`/`tasks.md`/`AGENTS.md` sincronizados si algo cambió.
+- **Auditoría antes de aceptar:** cumplimiento de spec → pruebas → calidad de código. Una tarea con una prueba fallida o colgada no se acepta ni se sube como terminada.
+- **Decisiones y desviaciones visibles:** las decisiones del humano se registran en el Decision Log; las desviaciones del plan se declaran en `progress.md`, no se resuelven en silencio.
+- **Los artefactos viven con el código:** documentación y código viajan en el mismo PR para que nunca queden desincronizados.
+
+## Flujo de Git y Pull Requests
+- **`main` es solo para código revisado.** Nunca se commitea ni se hace push directo a `main`; todo cambio entra por Pull Request. El humano crea y mergea el PR; el agente nunca mergea ni hace push a `main`.
+- **Una rama por tarea** (o por grupo pequeño y coherente de tareas), creada desde un `main` actualizado:
+  - Formato: `tipo/task-NN-descripcion-corta` (kebab-case), p. ej. `feat/task-11-actividad-form`.
+  - Tipos: `feat` (funcionalidad), `fix` (corrección), `test`, `refactor`, `docs` (specs/documentación; sin número de tarea: `docs/descripcion`), `chore` (dependencias, configuración).
+- **Commits** pequeños y atómicos, en imperativo y en inglés, con el formato `tipo(task-NN): resumen` (≤ 72 caracteres). El cuerpo explica el *porqué* y cita las referencias (US/BR/DEC). Cada commit deja el proyecto compilando.
+  - Se commitea solo cuando el humano lo pide; no se suben cambios sin verificar (análisis limpio y pruebas en verde).
+  - No se commitean secretos, `.env`, binarios pesados ni los PDFs de `docs/`. Se añade cada archivo explícitamente (nada de `git add -A` a ciegas).
+- **Pull Requests** pequeños y enfocados (idealmente una tarea, < ~400 líneas de diff). La descripción incluye:
+  1. Resumen y por qué (tarea, US/BR/DEC implementadas).
+  2. Qué cambió / qué NO cambió (fuera de alcance).
+  3. Cómo se probó (análisis, pruebas, verificación en dispositivo).
+  4. Checklist de la Definición de Hecho.
+  5. Gaps o decisiones pendientes para el revisor.
+- **Antes de abrir el PR:** actualizar la rama con `main`, resolver conflictos, volver a correr `flutter analyze` y `flutter test`.
+- **Después del merge:** se borra la rama y la siguiente tarea parte de un `main` actualizado (`git checkout main && git pull`).
+- **Prohibido sin pedido explícito:** `push --force`, reescribir historia publicada, saltarse hooks (`--no-verify`).

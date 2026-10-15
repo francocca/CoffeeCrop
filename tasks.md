@@ -2,6 +2,11 @@
 
 > Descomposición atómica basada en `plan.md`. Orden: Infraestructura → Modelos → Repositorio → Pantallas (por vertical slice) → Pruebas → Cierre. Cada tarea se ejecuta, se audita contra `constitution.md`/`spec.md`, y se acepta o rechaza antes de pasar a la siguiente (Fase 4 del flujo SDD).
 
+## Convenciones de ejecución
+- **Rama y PR por tarea:** cada tarea (o grupo pequeño coherente) va en su propia rama `tipo/task-NN-descripcion-corta` y entra a `main` por Pull Request que crea el humano — ver "Flujo de Git y Pull Requests" en `constitution.md`.
+- **Definición de Hecho:** además de los criterios de aceptación de cada tarea, aplica el checklist de DoD de `constitution.md` ("Buenas prácticas de SDD"): análisis limpio, pruebas en verde, UI verificada en dispositivo, `progress.md` actualizado.
+- **Trazabilidad:** los commits y PRs citan la tarea y las US/BR/DEC que implementan.
+
 ## Fase: Infraestructura
 
 ### Tarea 1: Dependencias y base de datos

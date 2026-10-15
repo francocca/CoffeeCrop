@@ -11,6 +11,10 @@ App móvil (Android, iOS) que combina:
 
 **Decisión de alcance (2026-08-06):** la app se enfoca únicamente en la **administración de la finca cafetera**, no en finanzas generales del hogar. Por eso la pantalla de Inicio usa el diseño de "Finca - Resumen" del mockup (tarjeta "Finca El Cafetal", plantas, inversión total, costo por planta, últimas actividades) en vez del dashboard genérico de patrimonio/ingresos-gastos del hogar. Los widgets del dashboard financiero genérico (`patrimonio_card`, `month_summary_card`, `proximos_pagos_card`, `ia_recommendation_card`) se eliminaron por quedar fuera de alcance.
 
+## Flujo de trabajo (leer antes de tocar código)
+- El desarrollo sigue **Spec-Driven Development**: `constitution.md` → `spec.md` → `plan.md` → `tasks.md` → `progress.md`. Estado real del avance: `progress.md`.
+- **Git:** nunca commitear ni hacer push a `main`. Cada tarea va en una rama `tipo/task-NN-descripcion-corta`; el humano crea y mergea el PR. Commits solo cuando el humano los pide. Convenciones completas y Definición de Hecho en `constitution.md`.
+
 ## Estrategia de despliegue
 - **Todo en local primero**: SQLite local + PostgreSQL/pgvector en Docker local + backend corriendo en localhost. Sin gastos de AWS durante desarrollo.
 - Migrar a AWS (RDS PostgreSQL) recién cuando la app esté validada en local.

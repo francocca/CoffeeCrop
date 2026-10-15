@@ -68,7 +68,7 @@ app/lib/
     actividad_form_screen.dart     # nuevo — US-003 y US-005 (crear/editar)
     actividades_list_screen.dart   # nuevo — US-004, listado paginado "Ver todas"
   widgets/
-    finca_card.dart                # existente — se actualiza para sacar "Costo por planta" (DEC-006, pendiente)
+    finca_card.dart                # existente — "Costo por planta" ya quitado (DEC-006, hecho en la Tarea 10)
     actividades_card.dart          # existente
 ```
 

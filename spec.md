@@ -137,7 +137,7 @@ abstract class FincaRepository {
 
 ## 6. Out of Scope (esta spec)
 - ❌ Sincronización con backend/nube (Fase 3 de `AGENTS.md`).
-- ❌ Múltiples fincas por usuario (pendiente de confirmar, ver Clarify Loop).
+- ❌ Múltiples fincas por usuario (decidido: una sola finca por instalación, ver DEC-001).
 - ❌ Adjuntar fotos/comprobantes a una actividad.
 - ❌ Categorías de actividad (fertilización, plagas, etc. como catálogo) — por ahora el nombre es texto libre.
 - ❌ Reportes/gráficos de tendencia (eso corresponde a la pantalla "Reportes", spec aparte).
@@ -175,4 +175,4 @@ abstract class FincaRepository {
 **Fecha:** 2026-09-30
 **Decisión:** Se elimina el cálculo de costo por planta (BR-002 removida) de esta spec. La "Inversión total" es simplemente la suma de los montos de todas las actividades registradas. Cada actividad representa tanto mano de obra como compras de insumos/herramientas (fungicidas, elementos de aseo, careta, gafas, rastrillo, secador solar, etc.) — no hay una entidad separada de "elementos" por ahora, todo se registra como actividad.
 **Razonamiento:** El costo por planta no aporta valor todavía sin más contexto de uso; simplifica el modelo para esta primera versión. `numero_plantas` se conserva en la Finca como dato descriptivo, pero no participa en ningún cálculo por el momento.
-**Impacto pendiente:** La pantalla de Inicio ya construida (`FincaCard` en `app/lib/widgets/finca_card.dart`) todavía muestra "Costo por planta" en la UI con datos de ejemplo — hay que actualizarla para que coincida con esta spec cuando se implemente (Fase 4 del flujo SDD).
+**Impacto:** `FincaCard` (`app/lib/widgets/finca_card.dart`) mostraba "Costo por planta" con datos de ejemplo; se quitó en la Tarea 10 y una prueba de widget verifica que ya no aparece. ✅ Resuelto.

@@ -4,7 +4,7 @@
 App móvil (Android, iOS) que combina:
 1. **Gestión financiera y de finca cafetera** (movimientos, presupuestos, reportes) — offline-first.
 2. **Asistente de IA (chat)** que responde dos tipos de preguntas:
-   - Consejos técnicos de cultivo de café, basados en el *Manual del Cafetero Colombiano* (Cenicafé) y ~1000 documentos de investigación de Cenicafé, vía RAG (Retrieval-Augmented Generation).
+   - Consejos técnicos de cultivo de café, basados en el *Manual del Cafetero Colombiano* (Cenicafé) y en los *Avances Técnicos* de Cenicafé (322 documentos seleccionados en `docs/base_conocimiento/`, con foco inicial en Boyacá), vía RAG (Retrieval-Augmented Generation).
    - Preguntas sobre los datos propios del usuario (saldos, gastos, cosecha, finca), consultando su base de datos.
 
 **Diseño de referencia:** mockup "Finanzas Inteligentes" (Hogar y Finca) compartido por el usuario el 2026-08-04. Pantallas: Inicio, Registrar movimiento (voz/foto/manual/importar), Asistente IA, Movimientos, Categorías, Finca - Resumen, Reportes, Registro por voz, Confirmar movimiento, Presupuestos, Configuración. El propio diseño indica el stack: Flutter + SQLite + IA.
@@ -33,7 +33,7 @@ App móvil (Android, iOS) que combina:
 | Backend / Agente IA | **Python (FastAPI)** | Independiente del lenguaje de la app — se comunican por API HTTP |
 | Base vectorial | **PostgreSQL + pgvector** | Local: Docker. Prod: AWS RDS |
 | LLM | **Claude API** | Genera respuestas del asistente |
-| Fuente de conocimiento cafetero | Manual del Cafetero Colombiano (3 tomos, ~995 páginas, ya en el proyecto) + ~1000 documentos de investigación de Cenicafé (pendiente descargar) |
+| Fuente de conocimiento cafetero | **`docs/base_conocimiento/`**: Manual del Cafetero Colombiano (3 tomos, ~995 páginas) + 319 Avances Técnicos de Cenicafé seleccionados (322 PDFs en total, ya descargados y clasificados) |
 
 ## Fases del proyecto
 
@@ -54,8 +54,9 @@ La feature **Gestión de la Finca** se especificó (`spec.md`), planificó (`pla
 - [ ] Backend Python (FastAPI) con dos rutas: RAG (consejos) y consulta de datos propios (estadísticas)
 - [ ] Base vectorial local (Docker + pgvector)
 - [ ] Pipeline de ingesta: extracción de texto (`pdftotext`) → chunking → embeddings → guardado en base vectorial
-- [ ] Ingesta del Manual del Cafetero Colombiano (3 tomos, ya descargados en el proyecto)
-- [ ] Descarga y vectorización de los ~1000 documentos de Cenicafé (servidor externo, pendiente definir fuente/URL exacta)
+- [x] Documentos fuente descargados y clasificados (2026-10-19): los 581 Avances Técnicos de Cenicafé ya están en el equipo (script `docs/manual_cafetero/descargar_avances_cenicafe.py`) y se clasificaron por relevancia para Boyacá (ver `docs/reporte_relevancia_boyaca.txt`)
+- [ ] Ingesta (extracción, chunking, embeddings) de los **322 PDFs de `docs/base_conocimiento/`** — categorías A (relación directa con Boyacá), B (conocimiento general), R (departamentos vecinos) y C (otros temas, baja prioridad); el manifiesto `_manifiesto.csv` de esa carpeta guarda la categoría de cada archivo para usarla como metadato del fragmento
+- [ ] Pendiente decidir: qué hacer con los 122 avances publicados antes del 2000 (categoría H, siguen en `docs/`) y con los 120 escaneados sin texto (categoría E, necesitarían OCR)
 - [ ] Integración del chat "Asistente IA" en la app, conectado al backend
 - [ ] Sincronización/backup: SQLite local ↔ backend en la nube
 
@@ -72,14 +73,22 @@ La feature **Gestión de la Finca** se especificó (`spec.md`), planificó (`pla
 - **Node.js** v24.18.0: solo se usa `npx http-server` para la vista previa web; el backend será Python.
 - **Visual Studio (Windows desktop):** no instalado ni necesario (solo Android/iOS).
 - **Disco:** una build de Android puede fallar con "Espacio en disco insuficiente" si `C:` se llena (ya pasó una vez); conviene mantener varios GB libres.
-- **Documentos:** `docs/manual_cafetero/` (`ManualDelCafeteroColombianoTomo1.pdf`, `Tomo2.pdf`, `Tomo3.pdf`, ~995 páginas, texto extraíble, no escaneado). Ignorada por git (`.gitignore`).
+- **Documentos** (`docs/`, ignorada por git — `.gitignore`; ~1.7 GB, 584 PDFs analizados el 2026-10-19):
+  - `docs/base_conocimiento/` → **los 322 PDFs que se van a vectorizar** (Manual del Cafetero en 3 tomos + Avances Técnicos de categorías A, B, R y C) y `_manifiesto.csv` (archivo, categoría, carpeta de origen; sirve también para revertir el movimiento).
+  - `docs/` (raíz) → 262 PDFs fuera de la base por ahora: 122 antiguos (H), 120 escaneados sin texto (E) y 20 de otras regiones (D).
+  - `docs/reporte_relevancia_boyaca.txt` → reporte con los criterios y la lista de cada categoría.
+  - `docs/manual_cafetero/descargar_avances_cenicafe.py` → script de descarga (guarda en `base_conocimiento/`, no vuelve a bajar lo que ya existe en `base_conocimiento/` ni en `docs/`; los avances nuevos quedan sin clasificar).
 
 ## Estructura del proyecto
 ```
 CoffeCrop/
   AGENTS.md  constitution.md  spec.md  plan.md  tasks.md  progress.md   # artefactos SDD
   .claude/launch.json       # config para previsualizar la app web en el navegador
-  docs/manual_cafetero/     # PDFs del Manual del Cafetero Colombiano (fuente para RAG; no se versiona)
+  docs/                     # no se versiona (.gitignore)
+    base_conocimiento/      # 322 PDFs a vectorizar: Manual del Cafetero + Avances Técnicos A/B/R/C, + _manifiesto.csv
+    manual_cafetero/        # solo el script descargar_avances_cenicafe.py
+    reporte_relevancia_boyaca.txt   # clasificación de los 584 PDFs (A, B, R, C, H, D, E)
+    (raíz: 262 PDFs descartados por ahora: H antiguos, E escaneados, D otras regiones)
   app/                      # proyecto Flutter (org com.coffecrop, nombre coffecrop)
     serve_web.bat           # sirve el build web estático (flutter build web + npx http-server)
     lib/
@@ -108,7 +117,7 @@ El usuario tiene una tablet Samsung Galaxy (SM X400, Android 16) conectada por U
 ## Decisiones tomadas
 - **Framework de la app:** Flutter, elegido por el usuario tras comparar con React Native — coincide con el diseño de referencia.
 - **Backend:** Python (no Node.js) — el lenguaje del backend es independiente del frontend (se comunican por API HTTP), y Python tiene mejor ecosistema para RAG/embeddings (LangChain, LlamaIndex, pypdf).
-- **Base vectorial:** PostgreSQL + pgvector en vez de un motor especializado (ej. OpenSearch) — alcanza y es más barato para el volumen esperado (estimado 1-3 GB de vectores incluso con ~1000 documentos de Cenicafé sumados al manual).
+- **Base vectorial:** PostgreSQL + pgvector en vez de un motor especializado (ej. OpenSearch) — alcanza y es más barato para el volumen esperado (estimado 1-3 GB de vectores incluso con el manual y los Avances Técnicos de Cenicafé; la base seleccionada son 322 PDFs, ~3.500 páginas de texto).
 - **PDFs originales:** se descargan y guardan aparte de la base de datos (local en desarrollo, S3 en producción), no como blobs en Postgres.
 - **RDS descartado por ahora:** todo el desarrollo se hace en local (Docker) hasta validar la app; AWS solo para producción.
 - **SQLite local con `sqflite`** (no `drift`), SQL explícito y sin generación de código; sin paquete de manejo de estado — las pantallas se refrescan volviendo a consultar el repositorio tras cada escritura.

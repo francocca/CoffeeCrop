@@ -40,7 +40,7 @@
 - Validar todas las entradas del usuario (formularios en Flutter y payloads de la API).
 - Mantener los PDFs/documentos crudos fuera de la base de datos.
 - Verificar visualmente cada cambio de interfaz (navegador o dispositivo real) antes de reportarlo como terminado.
-- Actualizar `AGENTS.md` y los artefactos de este flujo (`spec.md`, `plan.md`, `tasks.md`, `progress.md`) cuando cambien decisiones de alcance o arquitectura.
+- Actualizar `AGENTS.md` y los artefactos de la feature en curso (`specs/<feature>/spec.md`, `plan.md`, `tasks.md`, `progress.md`) cuando cambien decisiones de alcance o arquitectura.
 
 ### ⚠️ PREGUNTAR PRIMERO
 - Antes de agregar nuevas dependencias/paquetes de terceros (pub.dev o pip).
@@ -95,13 +95,15 @@ Códigos de estado:
 
 ## Flujo de trabajo (SDD)
 Este proyecto sigue Spec-Driven Development. Jerarquía de artefactos:
-1. **`constitution.md`** (este archivo) — leyes de alto nivel del proyecto.
-2. **`spec.md`** — fuente única de verdad de features y reglas (qué y por qué, no cómo).
-3. **`plan.md`** — plano arquitectónico de cada feature, generado por el agente y aprobado por el humano.
-4. **`tasks.md`** — descomposición en tareas atómicas y secuenciales.
-5. **`progress.md`** — registro de avance tarea por tarea.
+1. **`constitution.md`** (este archivo, en la raíz) — leyes de alto nivel del proyecto.
+2. **`specs/<feature>/spec.md`** — fuente única de verdad de la feature y sus reglas (qué y por qué, no cómo).
+3. **`specs/<feature>/plan.md`** — plano arquitectónico de la feature, generado por el agente y aprobado por el humano.
+4. **`specs/<feature>/tasks.md`** — descomposición en tareas atómicas y secuenciales.
+5. **`specs/<feature>/progress.md`** — registro de avance tarea por tarea.
 
-`AGENTS.md` se mantiene como el resumen vivo de alto nivel (fases del producto completo, estado del entorno); los artefactos de SDD (`spec.md`, `plan.md`, `tasks.md`) se usan por feature/fase para el desarrollo guiado por especificación.
+**Cada feature tiene su propia carpeta en `specs/`** (por ejemplo `specs/gestion-finca/`); una feature nueva empieza creando su carpeta y su `spec.md`. En el resto de este documento, "`spec.md`", "`plan.md`", "`tasks.md`" y "`progress.md`" se refieren a los de la feature en curso.
+
+`AGENTS.md` (también en la raíz) se mantiene como el resumen vivo de alto nivel (fases del producto completo, estado del entorno).
 
 ## Buenas prácticas de SDD
 - **Spec primero:** ningún cambio de comportamiento se implementa sin estar en `spec.md`. Si aparece algo no especificado, se actualiza la spec (y el Decision Log) *antes* de escribir código; si ya se escribió código sin spec, se revierte o se especifica de inmediato (corregir el *drift*).

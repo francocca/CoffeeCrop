@@ -9,10 +9,10 @@ App móvil (Android, iOS) que combina:
 
 **Diseño de referencia:** mockup "Finanzas Inteligentes" (Hogar y Finca) compartido por el usuario el 2026-08-04. Pantallas: Inicio, Registrar movimiento (voz/foto/manual/importar), Asistente IA, Movimientos, Categorías, Finca - Resumen, Reportes, Registro por voz, Confirmar movimiento, Presupuestos, Configuración. El propio diseño indica el stack: Flutter + SQLite + IA.
 
-**Decisión de alcance (2026-08-06):** la app se enfoca únicamente en la **administración de la finca cafetera**, no en finanzas generales del hogar. Por eso la pantalla de Inicio usa el diseño de "Finca - Resumen" del mockup (tarjeta de la finca con nombre, plantas e inversión total, y últimas actividades; el "costo por planta" del mockup se quitó por ahora, ver DEC-006 en `spec.md`) en vez del dashboard genérico de patrimonio/ingresos-gastos del hogar. Los widgets del dashboard financiero genérico (`patrimonio_card`, `month_summary_card`, `proximos_pagos_card`, `ia_recommendation_card`) se eliminaron por quedar fuera de alcance.
+**Decisión de alcance (2026-08-06):** la app se enfoca únicamente en la **administración de la finca cafetera**, no en finanzas generales del hogar. Por eso la pantalla de Inicio usa el diseño de "Finca - Resumen" del mockup (tarjeta de la finca con nombre, plantas e inversión total, y últimas actividades; el "costo por planta" del mockup se quitó por ahora, ver DEC-006 en `specs/gestion-finca/spec.md`) en vez del dashboard genérico de patrimonio/ingresos-gastos del hogar. Los widgets del dashboard financiero genérico (`patrimonio_card`, `month_summary_card`, `proximos_pagos_card`, `ia_recommendation_card`) se eliminaron por quedar fuera de alcance.
 
 ## Flujo de trabajo (leer antes de tocar código)
-- El desarrollo sigue **Spec-Driven Development**: `constitution.md` → `spec.md` → `plan.md` → `tasks.md` → `progress.md`. Estado real del avance: `progress.md`.
+- El desarrollo sigue **Spec-Driven Development**: `constitution.md` (en la raíz, rige todo el proyecto) y, **por feature**, una carpeta `specs/<feature>/` con `spec.md` → `plan.md` → `tasks.md` → `progress.md`. Features: `specs/gestion-finca/` (Fase 1, cerrada). Estado real del avance de cada feature: su `progress.md`. Una feature nueva = una carpeta nueva en `specs/`.
 - **Git:** nunca commitear ni hacer push a `main`. Cada tarea va en una rama `tipo/task-NN-descripcion-corta`; el humano crea y mergea el PR. Commits solo cuando el humano los pide. Convenciones completas y Definición de Hecho en `constitution.md`.
 
 ## Estrategia de despliegue
@@ -38,7 +38,7 @@ App móvil (Android, iOS) que combina:
 ## Fases del proyecto
 
 ### Fase 1 — Base de la app (offline-first) — ✅ CERRADA (2026-10-14)
-La feature **Gestión de la Finca** se especificó (`spec.md`), planificó (`plan.md`) y ejecutó (`tasks.md`, 15/15 tareas, ver `progress.md`):
+La feature **Gestión de la Finca** se especificó, planificó y ejecutó en `specs/gestion-finca/` (`spec.md`, `plan.md`, `tasks.md` con 15/15 tareas, y `progress.md`):
 - [x] Proyecto Flutter creado + corriendo en dispositivo Android real (web solo como vista previa de desarrollo)
 - [x] Capa de datos: base SQLite (tablas `finca` y `actividad`), modelos con validación, excepciones tipadas y `FincaRepository` con 7 operaciones (alta/edición de finca, CRUD de actividades paginado de a 20, inversión total)
 - [x] Pantallas: Inicio con datos reales y estado vacío, formulario de finca, formulario de actividad (crear/editar), listado "Ver todas" paginado con eliminar y confirmación, navegación con el botón "+"
@@ -82,7 +82,9 @@ La feature **Gestión de la Finca** se especificó (`spec.md`), planificó (`pla
 ## Estructura del proyecto
 ```
 CoffeCrop/
-  AGENTS.md  constitution.md  spec.md  plan.md  tasks.md  progress.md   # artefactos SDD
+  AGENTS.md  constitution.md   # resumen vivo y reglas del proyecto
+  specs/                    # un directorio por feature, cada uno con spec.md, plan.md, tasks.md y progress.md
+    gestion-finca/          # Fase 1 (cerrada)
   .claude/launch.json       # config para previsualizar la app web en el navegador
   docs/                     # no se versiona (.gitignore)
     base_conocimiento/      # 322 PDFs a vectorizar: Manual del Cafetero + Avances Técnicos A/B/R/C, + _manifiesto.csv
@@ -123,12 +125,13 @@ El usuario tiene una tablet Samsung Galaxy (SM X400, Android 16) conectada por U
 - **SQLite local con `sqflite`** (no `drift`), SQL explícito y sin generación de código; sin paquete de manejo de estado — las pantallas se refrescan volviendo a consultar el repositorio tras cada escritura.
 - **Los datos de la finca viven en el dispositivo, no pasan por el backend** (offline-first). El backend de Python solo maneja el conocimiento cafetero (RAG con pgvector) y, más adelante, sincronización/backup y las consultas del asistente sobre los datos del usuario.
 - **Pruebas de widgets con un repositorio falso** (`test/fakes/fake_finca_repository.dart`): usar sqflite real dentro de `testWidgets` cuelga la suite (animación infinita del `CircularProgressIndicator` + I/O real fuera de la zona fake-async). sqflite real solo se prueba en las pruebas del repositorio, con base de datos en memoria (`sqflite_common_ffi`).
-- **Sin "costo por planta"** por ahora; "Inversión total" = suma de los montos de todas las actividades (DEC-006 en `spec.md`).
+- **Sin "costo por planta"** por ahora; "Inversión total" = suma de los montos de todas las actividades (DEC-006 en `specs/gestion-finca/spec.md`).
+- **Un directorio por feature en `specs/`** (decisión 2026-10-19): `specs/<feature>/{spec,plan,tasks,progress}.md`; `constitution.md` y `AGENTS.md` quedan en la raíz porque rigen todo el proyecto.
 
 ## Próximos pasos inmediatos
 **Siguiente: Fase 3 — Backend + Asistente IA** (decisión del usuario, 2026-10-14). Se sigue el mismo flujo SDD, con una nueva spec por feature y una rama + PR por tarea:
 1. Escribir la spec de la primera feature de la Fase 3: **base de conocimiento cafetero** (extracción de texto de los PDFs → chunking → embeddings → PostgreSQL + pgvector en Docker → búsqueda por similitud). Incluir su Clarify Loop (preguntas sobre embeddings/modelo, tamaño de chunk, formato de respuesta, etc.) antes de planificar.
-2. `plan.md` y `tasks.md` para esa feature; luego ejecución tarea por tarea.
+2. `plan.md` y `tasks.md` para esa feature (en `specs/base-conocimiento/`); luego ejecución tarea por tarea.
 3. Después: endpoint del asistente (FastAPI + Claude API) y el chat dentro de la app.
 
 Aplazado: Fase 2 (registro por voz y escaneo de factura), pestañas Movimientos/Reportes/Configuración, biometría (Fase 4).

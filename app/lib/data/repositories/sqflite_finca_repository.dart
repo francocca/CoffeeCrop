@@ -5,7 +5,7 @@ import '../../models/finca.dart';
 import '../exceptions/finca_exceptions.dart';
 import 'finca_repository.dart';
 
-/// Implementación de [FincaRepository] con sqflite — ver plan.md §5 para el
+/// Implementación de [FincaRepository] con sqflite — ver specs/gestion-finca/plan.md §5 para el
 /// detalle de cada consulta SQL.
 class SqfliteFincaRepository implements FincaRepository {
   final Database db;

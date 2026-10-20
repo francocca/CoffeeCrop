@@ -1,6 +1,6 @@
 import '../data/exceptions/finca_exceptions.dart';
 
-/// Entidad Actividad — ver spec.md §4 y BR-003.
+/// Entidad Actividad — ver specs/gestion-finca/spec.md §4 y BR-003.
 class Actividad {
   final String id;
   final String fincaId;

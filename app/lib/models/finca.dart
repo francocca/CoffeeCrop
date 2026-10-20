@@ -1,6 +1,6 @@
 import '../data/exceptions/finca_exceptions.dart';
 
-/// Entidad Finca — ver spec.md §4 y BR-001.
+/// Entidad Finca — ver specs/gestion-finca/spec.md §4 y BR-001.
 class Finca {
   final String id;
   final String nombre;

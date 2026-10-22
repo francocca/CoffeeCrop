@@ -79,7 +79,8 @@
 ### BR-001: Tamaño y límites de los fragmentos
 **Given** el texto de un documento
 **When** se divide en fragmentos
-**Then** cada fragmento tiene aproximadamente 600 tokens con un solape de unos 100 tokens con el anterior
+**Then** cada fragmento tiene como máximo unos 600 tokens, y nunca más de lo que el modelo activo puede leer (menos un margen): el tamaño objetivo es el menor de los dos (DEC-009), con un solape de aproximadamente una sexta parte del tamaño con el fragmento anterior
+**And** los tokens se cuentan con el tokenizador del propio modelo
 **And** se corta en límites de párrafo o de página y nunca a mitad de una oración
 **And** ningún fragmento mezcla texto de dos documentos
 **And** cada fragmento guarda la página donde empieza y la página donde termina.
@@ -187,7 +188,7 @@ def evaluar(archivo_preguntas: Path, k: int = 5) -> InformeCalidad: ...
 
 ### DEC-003: Fragmentos de ~600 tokens con solape
 **Fecha:** 2026-10-20
-**Decisión:** Fragmentos de unos 600 tokens, solape de unos 100, cortados en límites de párrafo/página (BR-001).
+**Decisión:** Fragmentos de unos 600 tokens, solape de unos 100, cortados en límites de párrafo/página (BR-001). *Ajustada por DEC-009: el tamaño real depende de cuánto puede leer el modelo.*
 **Razonamiento:** Decisión del usuario (opción recomendada). Da contexto suficiente para respuestas agronómicas (una dosis sin la etapa del cultivo pierde sentido); el tamaño se puede ajustar con las preguntas de prueba.
 
 ### DEC-004: Prioridad de Boyacá por categoría
@@ -204,6 +205,11 @@ def evaluar(archivo_preguntas: Path, k: int = 5) -> InformeCalidad: ...
 **Fecha:** 2026-10-20
 **Decisión:** No se ingieren los 120 PDFs sin texto ni se agrega OCR en esta feature.
 **Razonamiento:** Decisión del usuario (opción recomendada). Son páginas antiguas, muchas fuera de tema; el OCR sumaría una herramienta, tiempo de proceso y errores de lectura para poco valor.
+
+### DEC-009: El tamaño del fragmento depende del modelo (ajusta DEC-003)
+**Fecha:** 2026-10-20
+**Decisión:** El tamaño objetivo de los fragmentos es el menor entre 600 tokens y lo que el modelo activo puede leer menos un margen de 60 (con e5, que lee 512, ≈ 450 tokens y solape ≈ 75; con BGE-M3, que lee 8.192, ≈ 600 y solape 100). Los tokens se cuentan con el tokenizador del modelo.
+**Razonamiento:** Aceptada por el usuario. DEC-003 pedía ~600 tokens, pero los modelos multilingües e5 solo leen 512 y cortarían el final del fragmento sin avisar, perdiendo texto. Se mantiene la intención de DEC-003 (fragmentos de contexto suficiente, con solape) respetando el límite real de cada modelo. Descubierta al preparar el plan, al comparar las características de los modelos candidatos.
 
 ### DEC-007: Cada resultado debe poder citarse — *propuesta del agente, por confirmar*
 **Fecha:** 2026-10-20

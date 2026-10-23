@@ -5,6 +5,8 @@ docs/
 backend/.venv/
 backend/__pycache__/
 backend/**/__pycache__/
+backend/src/*.egg-info/
+backend/.pytest_cache/
 *.pyc
 
 # Entornos y secretos

@@ -19,10 +19,13 @@ dev = ["pytest"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+conocimiento = ["db/*.sql"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests"]
-addopts = "-m 'not modelo'"
+addopts = "-m 'not integration and not modelo'"
 filterwarnings = ["error"]
 markers = [
     "integration: necesita el PostgreSQL de Docker encendido (pytest -m integration)",

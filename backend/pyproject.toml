@@ -29,5 +29,6 @@ addopts = "-m 'not integration and not modelo'"
 filterwarnings = ["error"]
 markers = [
     "integration: necesita el PostgreSQL de Docker encendido (pytest -m integration)",
+    "docs: usa un PDF real de docs/base_conocimiento (se omite si la carpeta no está)",
     "modelo: descarga y carga el modelo de embeddings real (pytest -m modelo)",
 ]

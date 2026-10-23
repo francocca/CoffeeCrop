@@ -103,6 +103,20 @@ def guardar_fragmentos(
     return ids
 
 
+def leer_fragmentos(
+    conexion: psycopg.Connection, documento_id: uuid.UUID
+) -> list[tuple[uuid.UUID, str]]:
+    """Ids y textos de los fragmentos de un documento, en orden (para vectorizar con otro modelo)."""
+    return conexion.execute(
+        "SELECT id, texto FROM fragmento WHERE documento_id = %s ORDER BY orden", (documento_id,)
+    ).fetchall()
+
+
+def actualizar_estado(conexion: psycopg.Connection, documento_id: uuid.UUID, estado: str) -> None:
+    with conexion.transaction():
+        conexion.execute("UPDATE documento SET estado = %s WHERE id = %s", (estado, documento_id))
+
+
 def guardar_embeddings(
     conexion: psycopg.Connection,
     modelo: str,

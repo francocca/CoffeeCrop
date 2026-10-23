@@ -232,3 +232,25 @@ def test_una_transaccion_que_termina_bien_conserva_todo(conexion):
 
     assert contar(conexion, "documento") == 1
     assert contar(conexion, "fragmento") == 2
+
+
+# --- Lectura de fragmentos y estado (para la Tarea 12) ---
+
+
+def test_leer_fragmentos_devuelve_ids_y_textos_en_orden(conexion):
+    documento, ids = documento_con_fragmentos(conexion, cantidad=3)
+
+    fragmentos = repositorio.leer_fragmentos(conexion, documento.id)
+
+    assert fragmentos == [(ids[n], f"Texto del fragmento {n}.") for n in range(3)]
+
+
+def test_actualizar_estado_cambia_solo_el_estado(conexion):
+    documento, _ = documento_con_fragmentos(conexion)
+
+    repositorio.actualizar_estado(conexion, documento.id, "error")
+
+    actualizado = repositorio.buscar_documento(conexion, documento.nombre_archivo)
+    assert actualizado.estado == "error"
+    assert actualizado.sha256 == documento.sha256
+    assert contar(conexion, "fragmento") == 2

@@ -1,8 +1,8 @@
 # Progreso de Implementación — Base de Conocimiento Cafetero
 
 ## Resumen
-- **Tareas completadas:** 3 / 20 (Tarea 4 en revisión)
-- **Tarea actual:** Tarea 4 — Extracción de texto de PDFs
+- **Tareas completadas:** 4 / 20 (Tarea 5 en revisión)
+- **Tarea actual:** Tarea 5 — Limpieza: encabezados repetidos y texto corrido
 - **Tiempo invertido:** —
 
 ## Registro de Tareas
@@ -24,15 +24,29 @@
   - **Decisión:** `conectar(registrar_vector=True)` registra el tipo `vector` de pgvector; `inicializar_db` lo desactiva porque la extensión aún puede no existir. `Vector` de pgvector 0.5.1 se lee con `.to_list()`.
   - **Pendiente para la Tarea 13 (CLI):** `cargar_config()` lee solo variables de entorno, no `backend/.env`; hoy solo `conftest.py` lo carga (para las pruebas). El CLI deberá cargar `.env` o documentar cómo exportar `DATABASE_URL`.
   - Las pruebas de integración fallan con un mensaje claro si falta `DATABASE_URL` o Docker está apagado (no se omiten en silencio).
-- 🔄 **Tarea 4 — Extracción de texto de PDFs:** lista para auditoría (2026-10-22). Rama: `feat/task-04-extraccion-pdf`.
+- ✅ **Tarea 4 — Extracción de texto de PDFs:** ACEPTADA (2026-10-22, mergeada en el PR #15). Rama: `feat/task-04-extraccion-pdf`.
   - `extraccion/pdf.py`: `extraer_paginas(ruta, pdftotext_bin=None)` (llama a `pdftotext -enc UTF-8 <pdf> -`, una cadena por página, página = posición + 1), `sha256_archivo(ruta)` (lee por bloques de 1 MB) y `tiene_texto_legible(paginas)` (≥ 1.500 caracteres sin contar espacios ni saltos de línea, BR-002). `PdfExtractionError` (`PDF_EXTRACTION_ERROR`) en `errores.py`, con mensajes que mencionan `PDFTOTEXT_BIN` cuando el ejecutable no existe, falla o se cuelga (tope de 120 s).
-  - Verificado: `pytest` → 27 en verde (19 de esta tarea: 16 con `pdftotext` simulado y 1 con PDF real marcada `docs`, que se omite si la carpeta no está). Comprobación manual sobre los PDFs reales: Tomos 1, 2 y 3 del Manual dan 326, 354 y 327 páginas (el Tomo 2 coincide con las 354 de `plan.md` §0), todos legibles, sin ``.
+  - Verificado: `pytest` → 27 en verde (19 de esta tarea: 16 con `pdftotext` simulado y 1 con PDF real marcada `docs`, que se omite si la carpeta no está). Comprobación manual sobre los PDFs reales: Tomos 1, 2 y 3 del Manual dan 326, 354 y 327 páginas (el Tomo 2 coincide con las 354 de `plan.md` §0), todos legibles, sin `
+`.
   - **Hallazgo — el `pdftotext` de este equipo es Xpdf 4.06** (viene con Git para Windows, `/mingw64/bin`), no Poppler como suponía `plan.md` §2. Acepta los mismos parámetros usados (`-enc UTF-8`, salida a `-`) y separa páginas con ``. Los mensajes de error dicen "instálalo o indica PDFTOTEXT_BIN" sin nombrar Poppler. No hay `pdfinfo` en el equipo, por lo que el conteo de páginas se contrastó con el dato conocido del Tomo 2.
-  - **Hallazgo — Windows escribe `
-`:** `pdftotext` entrega saltos de línea `
+  - **Hallazgo — Windows escribe `
+
+`:** `pdftotext` entrega saltos de línea `
+
 ` en este sistema; `extraer_paginas` los normaliza a `
 ` para que la limpieza (Tareas 5-6) no dependa del sistema operativo. El `` final de cada página genera una cadena vacía de más, que se descarta (las páginas vacías del medio sí se conservan, para no desplazar los números).
   - **Fuera de la lista de la tarea:** marcador `docs` en `pyproject.toml` y `PdfExtractionError` en `errores.py` (la tarea pedía "un error claro" sin nombrarlo).
+- 🔄 **Tarea 5 — Limpieza: encabezados repetidos y texto corrido:** lista para auditoría (2026-10-22). Rama: `feat/task-05-limpieza-encabezados`.
+  - `extraccion/limpieza.py`: `quitar_encabezados_repetidos(paginas)` (líneas de ≤ 80 caracteres presentes en ≥ 40 % de las páginas, solo documentos de ≥ 4 páginas; cuenta páginas distintas, no repeticiones), `normalizar_texto_corrido(paginas)` y `limpiar_paginas(paginas)` que encadena ambas. Siempre devuelve una cadena por página (las vacías quedan en `""`), así se conservan los números de página.
+  - Verificado: `pytest` → 47 en verde (20 nuevas de limpieza, AAA, incluidos los límites 40 % exacto / 30 % y documentos de 3 páginas). Sobre los PDFs reales: en el Tomo 2 se quitan `cafetero colombiano` y `Establecimiento del cultivo Tomo 2`; en el Tomo 1, `cafetero colombiano`; el texto baja ~1,5 % de caracteres.
+  - **Interpretaciones de "línea suelta de ≤ 3 caracteres":** (1) solo se descarta un bloque (separado por línea en blanco) que consiste en una única línea corta, no cualquier línea corta: así no se pierde la última palabra de un párrafo partido en líneas ("…en la
+era"); (2) además se quita el número de página (1–3 dígitos) cuando es la primera línea de la página, porque `pdftotext` lo deja pegado al texto ("30 Lo anterior demuestra…"; ocurre en 149 de 354 páginas del Tomo 2).
+  - **Decisión — viñetas:** el Manual trae las viñetas como caracteres de control C1 (``, 1.930 veces en el Tomo 2). Se convierten en `• ` y cada viñeta abre un párrafo nuevo; cualquier otro carácter C1 suelto se elimina. Ligaduras (ﬁ ﬂ ﬀ ﬃ ﬄ), espacios no separables, de ancho cero y guiones blandos se normalizan con una tabla explícita (no NFKC, que alteraría `m²` o `º`).
+  - **Párrafos:** las líneas de un mismo bloque se unen con un espacio; los bloques (línea en blanco) quedan separados por `
+
+`. Tablas y cuadros quedan como líneas unidas (`es_tabla` las marca en la Tarea 8).
+  - **Gaps para la revisión de la Tarea 17 (no se corrigen aquí):** (a) los encabezados *por capítulo* del Manual (p. ej. `Germinadores y almácigos Tomo 2`) aparecen en menos del 40 % de las páginas y no se quitan; (b) en algunas páginas del Manual `pdftotext` mezcla letras de cuadros superpuestos al texto ("sistemCaosnasgidroeforraecstioanlees…", Tomo 2, p. 32): es un problema de extracción, no de limpieza; (c) el encabezado del Tomo 2 está en el 41 % de las páginas, apenas sobre el umbral.
+  - Sin cambios en dependencias ni en archivos fuera de la lista (solo `limpieza.py` y `test_limpieza.py`).
 
 ## Registro de Rechazos
 (ninguno)

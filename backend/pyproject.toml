@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conocimiento"
+version = "0.1.0"
+description = "Base de conocimiento cafetero de CoffeCrop: ingesta, vectorización y búsqueda por significado."
+requires-python = ">=3.12"
+dependencies = [
+    "sentence-transformers",
+    "psycopg[binary]>=3.2",
+    "pgvector",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = "-m 'not modelo'"
+filterwarnings = ["error"]
+markers = [
+    "integration: necesita el PostgreSQL de Docker encendido (pytest -m integration)",
+    "modelo: descarga y carga el modelo de embeddings real (pytest -m modelo)",
+]

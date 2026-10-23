@@ -12,6 +12,8 @@ backend/.pytest_cache/
 # Entornos y secretos
 .env
 .env.*
+backend/.env
+!.env.example
 
 # Sistema
 .DS_Store

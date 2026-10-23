@@ -1,8 +1,8 @@
 # Progreso de Implementación — Base de Conocimiento Cafetero
 
 ## Resumen
-- **Tareas completadas:** 6 / 20 (Tarea 7 en revisión)
-- **Tarea actual:** Tarea 7 — Fragmentación (núcleo)
+- **Tareas completadas:** 7 / 20 (Tarea 8 en revisión)
+- **Tarea actual:** Tarea 8 — Marcado de tablas y política por categoría
 - **Tiempo invertido:** —
 
 ## Registro de Tareas
@@ -57,13 +57,20 @@ era"); (2) además se quita el número de página (1–3 dígitos) cuando es la 
   - **Gaps (no bloquean, para la revisión de la Tarea 17):** (a) cuando el primer párrafo empieza con letra capitular y los autores quedan pegados al texto (Avance 265: `E Jorge E. Botero*; … l estudio de aves…`) la línea es de cuerpo y se conserva con ese ruido; (b) los 5 Avances sin encabezado de bibliografía conservan sus referencias; (c) quedan 3 líneas de créditos atípicas (`Edición: Fotografía: Imágenes en computador: …`, Avance 361; `Fotografía: Gomalo Hoyos…`, Avance 305) y 1 cita con DOI dentro del cuerpo (Avance 529).
   - Sin cambios en dependencias; archivos tocados: `limpieza.py` y `test_limpieza.py` (la firma de `limpiar_paginas` cambió; las pruebas de la Tarea 5 se actualizaron).
 
-- 🔄 **Tarea 7 — Fragmentación (núcleo):** lista para auditoría (2026-10-23). Rama: `feat/task-07-fragmentacion`. Implementa US-001, BR-001, DEC-009.
+- ✅ **Tarea 7 — Fragmentación (núcleo):** ACEPTADA (2026-10-23, mergeada en el PR #17). Rama: `feat/task-07-fragmentacion`. Implementa US-001, BR-001, DEC-009.
   - `fragmentacion.py`: `fragmentar(paginas, contar_tokens, max_tokens_modelo)` devuelve una lista de `Fragmento` (dataclass inmutable con `orden`, `texto`, `pagina_inicio`, `pagina_fin`, `tokens`; `es_tabla` llega en la Tarea 8). `tamano_objetivo(max)` = `min(600, max − 60)` (e5 → 452, BGE-M3 → 600; un modelo de ≤ 60 tokens → `ValueError`) y `tamano_solape(objetivo)` = `objetivo // 6` (75 / 100).
   - **Cómo corta:** cada página se parte en párrafos (`\n\n`, la salida de `limpiar_paginas`) y cada párrafo en oraciones; las oraciones se agrupan mientras el texto unido, **contado con `contar_tokens`** (no con la suma de las partes), no pase del objetivo. Una oración nunca cruza de página, así `pagina_inicio`/`pagina_fin` salen de la primera y la última oración del fragmento (páginas numeradas desde 1; las vacías se saltan sin desplazar números). El solape son las últimas oraciones del fragmento anterior que suman ≤ solape; si con ellas la siguiente oración no cabe, se quitan desde el principio.
   - **Oraciones:** fin en `. ! ? …` seguido de espacio y mayúscula, dígito, viñeta o signo de apertura. No se corta tras una inicial o un género abreviado (`Jorge E. Botero`, `H. vastatrix`) ni tras abreviaturas comunes (`Dr.`, `Fig.`, `p. ej.`, `cv.`, `spp.`…). Una oración partida por un salto de página se vuelve a unir con un espacio (no con salto de párrafo).
   - **Oración más larga que el objetivo:** queda sola en su fragmento (con `tokens` > objetivo) y se registra un `logging.warning` del logger `conocimiento.fragmentacion`.
   - Verificado: `pytest` → 95 en verde (19 nuevas, AAA, con contador de palabras: tamaño, solape, páginas, oraciones largas, documento de una página, documento vacío, abreviaturas, párrafo partido por página). Sobre los **322 PDFs** de `docs/base_conocimiento/` (contando palabras, no tokens reales, con `max_tokens_modelo=512`): 3.315 fragmentos, mediana 438, máximo 563, todos con páginas válidas; **5 advertencias**, todas en tablas climáticas (filas de números sin puntuación) que la Tarea 8 marcará `es_tabla`. Con el tokenizador real (≈ 1,3–1,5 tokens por palabra en español) habrá más fragmentos, en línea con la estimación de 8.000–12.000 de `plan.md` §8.
   - **Decisión menor:** `orden` empieza en 0. Sin cambios en dependencias; archivos tocados: solo `fragmentacion.py` y `test_fragmentacion.py` (y este `progress.md`).
+
+- 🔄 **Tarea 8 — Marcado de tablas y política por categoría:** lista para auditoría (2026-10-23). Rama: `feat/task-08-tablas-categoria`. Implementa BR-001, DEC-004 (`plan.md` §6.3).
+  - `fragmentacion.py`: `es_tabla(texto)` es verdadero si menos del 45 % de los caracteres no-espacio son letras (un texto vacío no es tabla). `Fragmento` ganó el campo `es_tabla`, que `fragmentar` calcula al cerrar cada fragmento. `filtrar_tablas(fragmentos, categoria)` devuelve un `ResultadoFiltro` (`conservados`, `descartados`): en A conserva todo; en B, R y C descarta los `es_tabla`; la prosa se conserva siempre. Una categoría que no sea A/B/R/C → `ValueError`.
+  - **Decisión menor:** el filtrado **renumera `orden`** de los conservados desde 0, para que siga siendo consecutivo (criterio de la Tarea 7) y no queden huecos en `UNIQUE (documento_id, orden)`.
+  - Verificado: `pytest` → 108 en verde (13 nuevas, AAA: calendario de siembra, párrafo normal, el umbral exacto de 45 % / 40 %, espacios que no cuentan, el mismo contenido en A y en B/R/C, renumeración, categoría desconocida). Sobre los **322 PDFs** de `docs/base_conocimiento/` (contando palabras, `max_tokens_modelo=512`): 23 de 3.313 fragmentos son tabla (0,7 %): 2 en A (se conservan) y 21 en B (se descartan; tablas de fertilización, lluvia y brillo solar, sobre todo de los Avances 362, 410 y 442); ninguno en R ni C.
+  - **Gaps (para la revisión de la Tarea 17):** (a) los tres tomos del Manual son categoría **B**, así que sus tablas también se descartan; (b) un fragmento que mezcla una frase de prosa con una tabla larga queda como tabla y se pierde la frase (Avance 394, p. 7: "En la Tabla 3 se presentan…"); (c) el umbral de 45 % se aplica por fragmento, no por párrafo: si hiciera falta más precisión, habría que marcar las tablas antes de agrupar oraciones.
+  - Sin cambios en dependencias ni en el esquema (la columna `es_tabla` ya existía); archivos tocados: `fragmentacion.py`, `test_fragmentacion.py` y este `progress.md`.
 
 ## Registro de Rechazos
 (ninguno)

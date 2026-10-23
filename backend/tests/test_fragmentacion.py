@@ -2,7 +2,14 @@ import logging
 
 import pytest
 
-from conocimiento.fragmentacion import fragmentar, tamano_objetivo, tamano_solape
+from conocimiento.fragmentacion import (
+    Fragmento,
+    es_tabla,
+    filtrar_tablas,
+    fragmentar,
+    tamano_objetivo,
+    tamano_solape,
+)
 
 # Con max_tokens_modelo = 72 el tamaño objetivo es 72 - 60 = 12 palabras y el solape 2.
 MAX_TOKENS_PEQUENO = 72
@@ -212,3 +219,109 @@ def test_conserva_los_parrafos_y_reune_la_oracion_partida_por_la_pagina():
     assert fragmentos[0].texto == (
         "Primer párrafo completo.\n\nUna oración que sigue en la página siguiente. Y otra más."
     )
+
+
+# --- Tablas y política por categoría (Tarea 8) ---
+
+CALENDARIO_DE_SIEMBRA = (
+    "Mes 1 2 3 4 5 6 7 8 9 10 11 12\n"
+    "Lluvia 45,2 78,1 120,4 210,3 198,7 95,0 60,2 72,8 140,5 230,1 185,6 80,3\n"
+    "Brillo 180 150 140 120 125 160 190 185 150 120 130 170\n"
+    "Siembra - - X X X - - - X X - -"
+)
+PARRAFO_NORMAL = (
+    "La siembra del café en Boyacá se recomienda al inicio de las lluvias, "
+    "cuando el suelo conserva humedad suficiente para el establecimiento de las plántulas."
+)
+
+
+def fragmento(orden: int, texto: str) -> Fragmento:
+    return Fragmento(
+        orden=orden,
+        texto=texto,
+        pagina_inicio=1,
+        pagina_fin=1,
+        tokens=contar_palabras(texto),
+        es_tabla=es_tabla(texto),
+    )
+
+
+def test_un_calendario_de_siembra_es_tabla():
+    assert es_tabla(CALENDARIO_DE_SIEMBRA)
+
+
+def test_un_parrafo_normal_no_es_tabla():
+    assert not es_tabla(PARRAFO_NORMAL)
+
+
+def test_el_umbral_es_menos_del_45_por_ciento_de_letras():
+    # Arrange: 9 de 20 caracteres no-espacio son letras (45 %) y 8 de 20 (40 %).
+    en_el_umbral = "abcdefghi 12345678901"
+    bajo_el_umbral = "abcdefgh 123456789012"
+
+    # Act / Assert
+    assert not es_tabla(en_el_umbral)
+    assert es_tabla(bajo_el_umbral)
+
+
+def test_los_espacios_no_cuentan_para_la_proporcion():
+    assert not es_tabla("a b c d e f 1 2 3 4")
+    assert not es_tabla("abcdef1234      \n\n      ")
+
+
+def test_un_texto_vacio_no_es_tabla():
+    assert not es_tabla("   \n ")
+
+
+def test_fragmentar_marca_los_fragmentos_de_tabla():
+    # Act
+    prosa = fragmentar([PARRAFO_NORMAL], contar_palabras, 512)
+    tabla = fragmentar([CALENDARIO_DE_SIEMBRA], contar_palabras, 512)
+
+    # Assert
+    assert [f.es_tabla for f in prosa] == [False]
+    assert [f.es_tabla for f in tabla] == [True]
+
+
+def test_en_categoria_a_se_conservan_las_tablas():
+    fragmentos = [fragmento(0, PARRAFO_NORMAL), fragmento(1, CALENDARIO_DE_SIEMBRA)]
+
+    resultado = filtrar_tablas(fragmentos, "A")
+
+    assert resultado.conservados == fragmentos
+    assert resultado.descartados == 0
+
+
+@pytest.mark.parametrize("categoria", ["B", "R", "C"])
+def test_en_las_demas_categorias_se_descartan_las_tablas(categoria):
+    fragmentos = [fragmento(0, PARRAFO_NORMAL), fragmento(1, CALENDARIO_DE_SIEMBRA)]
+
+    resultado = filtrar_tablas(fragmentos, categoria)
+
+    assert [f.texto for f in resultado.conservados] == [PARRAFO_NORMAL]
+    assert resultado.descartados == 1
+
+
+def test_la_prosa_se_conserva_en_todas_las_categorias():
+    fragmentos = [fragmento(0, PARRAFO_NORMAL)]
+
+    for categoria in ["A", "B", "R", "C"]:
+        assert filtrar_tablas(fragmentos, categoria).conservados == fragmentos
+
+
+def test_el_filtrado_renumera_el_orden_sin_huecos():
+    fragmentos = [
+        fragmento(0, PARRAFO_NORMAL),
+        fragmento(1, CALENDARIO_DE_SIEMBRA),
+        fragmento(2, PARRAFO_NORMAL),
+    ]
+
+    resultado = filtrar_tablas(fragmentos, "B")
+
+    assert [f.orden for f in resultado.conservados] == [0, 1]
+    assert fragmentos[2].orden == 2
+
+
+def test_una_categoria_desconocida_es_un_error():
+    with pytest.raises(ValueError):
+        filtrar_tablas([], "H")

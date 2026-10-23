@@ -1,11 +1,15 @@
 import logging
 import re
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 TAMANO_MAXIMO_FRAGMENTO = 600
 MARGEN_TOKENS_MODELO = 60
 DIVISOR_SOLAPE = 6
+PROPORCION_MINIMA_LETRAS = 0.45
+CATEGORIAS = frozenset({"A", "B", "R", "C"})
+# Los calendarios y datos de Boyacá vienen en tablas; en las demás categorías son casi solo números.
+CATEGORIAS_QUE_CONSERVAN_TABLAS = frozenset({"A"})
 
 _PARRAFOS = re.compile(r"\n\s*\n")
 # Una oración termina en . ! ? o … seguidos de espacio y de algo que puede abrir otra oración.
@@ -27,6 +31,13 @@ class Fragmento:
     pagina_inicio: int
     pagina_fin: int
     tokens: int
+    es_tabla: bool
+
+
+@dataclass(frozen=True)
+class ResultadoFiltro:
+    conservados: list[Fragmento]
+    descartados: int
 
 
 @dataclass(frozen=True)
@@ -50,6 +61,26 @@ def tamano_solape(objetivo: int) -> int:
     return objetivo // DIVISOR_SOLAPE
 
 
+def es_tabla(texto: str) -> bool:
+    caracteres = [caracter for caracter in texto if not caracter.isspace()]
+    if not caracteres:
+        return False
+    letras = sum(caracter.isalpha() for caracter in caracteres)
+    return letras / len(caracteres) < PROPORCION_MINIMA_LETRAS
+
+
+def filtrar_tablas(fragmentos: list[Fragmento], categoria: str) -> ResultadoFiltro:
+    """Descarta los fragmentos de tabla salvo en categoría A; renumera `orden` sin huecos."""
+    if categoria not in CATEGORIAS:
+        raise ValueError(f"Categoría desconocida: {categoria!r}; se esperaba A, B, R o C.")
+    if categoria in CATEGORIAS_QUE_CONSERVAN_TABLAS:
+        seleccionados = list(fragmentos)
+    else:
+        seleccionados = [fragmento for fragmento in fragmentos if not fragmento.es_tabla]
+    conservados = [replace(fragmento, orden=orden) for orden, fragmento in enumerate(seleccionados)]
+    return ResultadoFiltro(conservados, len(fragmentos) - len(conservados))
+
+
 def fragmentar(
     paginas: list[str], contar_tokens: Callable[[str], int], max_tokens_modelo: int
 ) -> list[Fragmento]:
@@ -68,6 +99,7 @@ def fragmentar(
                 pagina_inicio=oraciones[0].pagina,
                 pagina_fin=oraciones[-1].pagina,
                 tokens=contar_tokens(texto),
+                es_tabla=es_tabla(texto),
             )
         )
 

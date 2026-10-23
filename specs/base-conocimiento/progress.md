@@ -1,8 +1,8 @@
 # Progreso de Implementación — Base de Conocimiento Cafetero
 
 ## Resumen
-- **Tareas completadas:** 7 / 20 (Tarea 8 en revisión)
-- **Tarea actual:** Tarea 8 — Marcado de tablas y política por categoría
+- **Tareas completadas:** 8 / 20 (Tareas 9 y 10 en revisión, en la misma rama)
+- **Tarea actual:** Tarea 10 — Proveedor local con sentence-transformers
 - **Tiempo invertido:** —
 
 ## Registro de Tareas
@@ -65,12 +65,28 @@ era"); (2) además se quita el número de página (1–3 dígitos) cuando es la 
   - Verificado: `pytest` → 95 en verde (19 nuevas, AAA, con contador de palabras: tamaño, solape, páginas, oraciones largas, documento de una página, documento vacío, abreviaturas, párrafo partido por página). Sobre los **322 PDFs** de `docs/base_conocimiento/` (contando palabras, no tokens reales, con `max_tokens_modelo=512`): 3.315 fragmentos, mediana 438, máximo 563, todos con páginas válidas; **5 advertencias**, todas en tablas climáticas (filas de números sin puntuación) que la Tarea 8 marcará `es_tabla`. Con el tokenizador real (≈ 1,3–1,5 tokens por palabra en español) habrá más fragmentos, en línea con la estimación de 8.000–12.000 de `plan.md` §8.
   - **Decisión menor:** `orden` empieza en 0. Sin cambios en dependencias; archivos tocados: solo `fragmentacion.py` y `test_fragmentacion.py` (y este `progress.md`).
 
-- 🔄 **Tarea 8 — Marcado de tablas y política por categoría:** lista para auditoría (2026-10-23). Rama: `feat/task-08-tablas-categoria`. Implementa BR-001, DEC-004 (`plan.md` §6.3).
+- ✅ **Tarea 8 — Marcado de tablas y política por categoría:** ACEPTADA (2026-10-23, mergeada en el PR #18). Rama: `feat/task-08-tablas-categoria`. Implementa BR-001, DEC-004 (`plan.md` §6.3).
   - `fragmentacion.py`: `es_tabla(texto)` es verdadero si menos del 45 % de los caracteres no-espacio son letras (un texto vacío no es tabla). `Fragmento` ganó el campo `es_tabla`, que `fragmentar` calcula al cerrar cada fragmento. `filtrar_tablas(fragmentos, categoria)` devuelve un `ResultadoFiltro` (`conservados`, `descartados`): en A conserva todo; en B, R y C descarta los `es_tabla`; la prosa se conserva siempre. Una categoría que no sea A/B/R/C → `ValueError`.
   - **Decisión menor:** el filtrado **renumera `orden`** de los conservados desde 0, para que siga siendo consecutivo (criterio de la Tarea 7) y no queden huecos en `UNIQUE (documento_id, orden)`.
   - Verificado: `pytest` → 108 en verde (13 nuevas, AAA: calendario de siembra, párrafo normal, el umbral exacto de 45 % / 40 %, espacios que no cuentan, el mismo contenido en A y en B/R/C, renumeración, categoría desconocida). Sobre los **322 PDFs** de `docs/base_conocimiento/` (contando palabras, `max_tokens_modelo=512`): 23 de 3.313 fragmentos son tabla (0,7 %): 2 en A (se conservan) y 21 en B (se descartan; tablas de fertilización, lluvia y brillo solar, sobre todo de los Avances 362, 410 y 442); ninguno en R ni C.
   - **Gaps (para la revisión de la Tarea 17):** (a) los tres tomos del Manual son categoría **B**, así que sus tablas también se descartan; (b) un fragmento que mezcla una frase de prosa con una tabla larga queda como tabla y se pierde la frase (Avance 394, p. 7: "En la Tabla 3 se presentan…"); (c) el umbral de 45 % se aplica por fragmento, no por párrafo: si hiciera falta más precisión, habría que marcar las tablas antes de agrupar oraciones.
   - Sin cambios en dependencias ni en el esquema (la columna `es_tabla` ya existía); archivos tocados: `fragmentacion.py`, `test_fragmentacion.py` y este `progress.md`.
+
+- 🔄 **Tarea 9 — Interfaz EmbeddingProvider y proveedor falso:** lista para auditoría (2026-10-23). Rama: `feat/task-09-10-embedding-providers` (compartida con la Tarea 10, por pedido del usuario). Implementa US-004, BR-004 (`plan.md` §3.1 y §7).
+  - `embeddings/base.py`: `EmbeddingProvider` (`Protocol`, `@runtime_checkable`) con `nombre_modelo`, `dimension`, `max_tokens`, `contar_tokens`, `embed_documents` y `embed_query`, tal como `plan.md` §3.1.
+  - `tests/fakes.py`: `FakeEmbeddingProvider(nombre_modelo, dimension, max_tokens)` (por defecto `fake-bolsa-de-palabras`, 256, 512). Cada palabra (`\w+`, en minúsculas) suma 1 en la posición `sha256(palabra) % dimension` y el vector se normaliza. Se usa `hashlib` y no `hash()`, que cambia entre ejecuciones. `contar_tokens` cuenta palabras; `embed_query` y `embed_documents` no usan prefijos.
+  - **Decisión menor:** un texto sin palabras lanza `ValueError` (su vector sería cero y no se puede normalizar; en pgvector la distancia coseno con un vector cero no está definida).
+  - Verificado: `pytest` → 116 en verde (8 nuevas, AAA: cumple la interfaz, determinismo entre instancias y entre `embed_query`/`embed_documents`, normalización y dimensión, "hongo de la hoja del cafeto" más cerca de un pasaje de roya que de uno de secado, mayúsculas, configuración de modelo/dimensión/`max_tokens`, conteo de tokens, texto vacío).
+  - **Fuera de la lista de la tarea:** `embeddings/__init__.py` (vacío), necesario para que el paquete se importe igual que `extraccion/` y `db/`. Sin cambios en dependencias.
+
+- 🔄 **Tarea 10 — Proveedor local con sentence-transformers:** lista para auditoría (2026-10-23). Rama: `feat/task-09-10-embedding-providers` (misma rama que la Tarea 9, por pedido del usuario; commits separados). Implementa US-004, DEC-002.
+  - `embeddings/sentence_transformers.py`: `SentenceTransformersProvider(nombre_modelo, tamano_lote=16, cargar_modelo=SentenceTransformer)`. Carga el modelo **una vez**, en el constructor; `dimension` y `max_tokens` salen de `get_embedding_dimension()` y `get_max_seq_length()` (no escritos a mano). Los modelos e5 (`e5` como parte del nombre: `multilingual-e5-base`, `-large`) llevan `passage: ` en `embed_documents` y `query: ` en `embed_query`; BGE-M3 y los demás, ninguno. `encode` se llama con `normalize_embeddings=True` y `batch_size=tamano_lote`; un lote ≤ 0 → `ValueError`.
+  - **Decisión menor:** `contar_tokens` cuenta con el tokenizador del modelo **sin** tokens especiales ni prefijo; el margen de 60 tokens de DEC-009 cubre `passage: ` (≈ 3 tokens) y `<s>`/`</s>`.
+  - **Pruebas:** 10 rápidas con un modelo simulado inyectado por `cargar_modelo` (sin descargas: prefijos e5 / BGE-M3, lote por defecto y configurable, normalización pedida, una sola carga, tokenizador, cumple `EmbeddingProvider`) y 3 marcadas `modelo` con el modelo real (dimensión 768 y 512 tokens leídos del modelo; vectores normalizados; "hongo de la hoja del cafeto" más cerca del pasaje de roya que del de secado; conteo de tokens real). `pytest` → 126 en verde; `pytest -m modelo` → 3 en verde.
+  - **Descarga de `intfloat/multilingual-e5-base` (2026-10-23):** primera corrida ≈ **4 min** (241 s, descarga incluida); ocupa **1,1 GB** en `~/.cache/huggingface/hub`. Con el modelo ya descargado, la prueba `modelo` tarda ≈ 39 s (la mayor parte es cargar `torch`).
+  - **Sobre Windows:** `huggingface_hub` avisa que no puede crear symlinks en la caché y copia los archivos; como `pyproject.toml` convierte los avisos en errores (`filterwarnings = ["error"]`), las 3 pruebas `modelo` ignoran solo ese aviso (`ignore:.*symlinks:UserWarning`).
+  - **Gaps (para las Tareas 17 y 19):** (a) **los puntajes de e5 son altos para todo**: pregunta vs. pasaje de roya = 0,894, vs. pasaje de secado (sin relación) = 0,812; el `MINIMO_SIMILITUD` provisional de 0,75 (`config.py`) dejaría pasar casi cualquier fragmento, así que la calibración de la Tarea 19 es imprescindible; (b) el tokenizador real cuenta ≈ 1,56 tokens por palabra en español (39 tokens / 25 palabras en el pasaje de prueba), en línea con lo estimado en la Tarea 7; (c) importar `torch` hace que la suite rápida pase de ≈ 3 s a ≈ 40 s, aunque no use el modelo real.
+  - Sin dependencias nuevas (`sentence-transformers` ya estaba aprobada e instalada: 6.2.0, `torch` 2.14.1 CPU). Archivos tocados: `sentence_transformers.py`, `test_proveedor_real.py` y este `progress.md`.
 
 ## Registro de Rechazos
 (ninguno)

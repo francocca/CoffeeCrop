@@ -16,3 +16,7 @@ class NoEmbeddingsForModelError(ConocimientoError):
 
 class DatabaseUnavailableError(ConocimientoError):
     code = "DB_UNAVAILABLE"
+
+
+class PdfExtractionError(ConocimientoError):
+    code = "PDF_EXTRACTION_ERROR"

@@ -1,28 +1,15 @@
 import os
 import uuid
-from pathlib import Path
 
 import psycopg
 import pytest
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 
+from conocimiento.config import cargar_archivo_env
 from conocimiento.db.conexion import conectar, inicializar_db
 
-ARCHIVO_ENV = Path(__file__).resolve().parents[1] / ".env"
-
-
-def _cargar_env_local() -> None:
-    if not ARCHIVO_ENV.exists():
-        return
-    for linea in ARCHIVO_ENV.read_text(encoding="utf-8").splitlines():
-        linea = linea.strip()
-        if linea and not linea.startswith("#") and "=" in linea:
-            clave, valor = linea.split("=", 1)
-            os.environ.setdefault(clave.strip(), valor.strip())
-
-
-_cargar_env_local()
+cargar_archivo_env()
 
 
 @pytest.fixture(scope="session")

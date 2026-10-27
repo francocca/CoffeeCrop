@@ -1,3 +1,4 @@
+import csv
 import logging
 import re
 import time
@@ -10,11 +11,13 @@ import psycopg
 from conocimiento.db import repositorio
 from conocimiento.db.repositorio import DatosDocumento, Documento
 from conocimiento.embeddings.base import EmbeddingProvider
-from conocimiento.extraccion.limpieza import limpiar_paginas
+from conocimiento.errores import ConocimientoError
+from conocimiento.extraccion.limpieza import TIPO_AVANCE, TIPO_MANUAL, limpiar_paginas
 from conocimiento.extraccion.pdf import extraer_paginas, sha256_archivo, tiene_texto_legible
-from conocimiento.fragmentacion import filtrar_tablas, fragmentar
+from conocimiento.fragmentacion import CATEGORIAS, filtrar_tablas, fragmentar
 
 LOTE_VECTORIZACION = 64
+NOMBRE_MANIFIESTO = "_manifiesto.csv"
 
 ESTADO_INDEXADO = "indexado"
 ESTADO_SIN_TEXTO = "sin_texto"
@@ -36,6 +39,116 @@ class ResultadoIngesta:
     fragmentos_descartados: int = 0
     segundos: float = 0.0
     motivo: str | None = None
+
+
+@dataclass(frozen=True)
+class FilaManifiesto:
+    archivo: str
+    categoria: str
+    carpeta_origen: str
+
+
+@dataclass(frozen=True)
+class InformeIngesta:
+    resultados: list[ResultadoIngesta]
+    segundos: float
+
+    def con_estado(self, estado: str) -> list[ResultadoIngesta]:
+        return [resultado for resultado in self.resultados if resultado.estado == estado]
+
+    @property
+    def fragmentos_creados(self) -> int:
+        return sum(resultado.fragmentos_creados for resultado in self.resultados)
+
+    @property
+    def fragmentos_descartados(self) -> int:
+        return sum(resultado.fragmentos_descartados for resultado in self.resultados)
+
+
+def ingestar_carpeta(
+    conexion: psycopg.Connection,
+    carpeta: Path,
+    proveedor: EmbeddingProvider,
+    extractor: Callable[[Path], list[str]] = extraer_paginas,
+) -> InformeIngesta:
+    """Procesa cada PDF del manifiesto de la carpeta; un documento que falla no detiene a los demás."""
+    inicio = time.perf_counter()
+    filas = leer_manifiesto(Path(carpeta))
+    _fijar_modelo_activo_si_falta(conexion, proveedor.nombre_modelo)
+    resultados = []
+    for numero, fila in enumerate(filas, start=1):
+        resultado = _ingestar_fila(conexion, Path(carpeta), fila, proveedor, extractor)
+        _registro.info(
+            "[%d/%d] %s: %s%s", numero, len(filas), fila.archivo, resultado.estado,
+            f" ({resultado.motivo})" if resultado.motivo else "",
+        )
+        resultados.append(resultado)
+    return InformeIngesta(resultados, time.perf_counter() - inicio)
+
+
+def leer_manifiesto(carpeta: Path) -> list[FilaManifiesto]:
+    ruta = carpeta / NOMBRE_MANIFIESTO
+    if not ruta.is_file():
+        raise ConocimientoError(f"no existe el manifiesto {ruta}")
+    # utf-8-sig: el manifiesto se generó en Windows y empieza con BOM.
+    with open(ruta, encoding="utf-8-sig", newline="") as archivo:
+        return [
+            FilaManifiesto(fila["archivo"], fila["categoria"], fila["carpeta_origen"])
+            for fila in csv.DictReader(archivo)
+        ]
+
+
+def tipo_desde_nombre(nombre_archivo: str) -> str:
+    return TIPO_MANUAL if nombre_archivo.lower().startswith("manual") else TIPO_AVANCE
+
+
+def formatear_informe(informe: InformeIngesta) -> str:
+    lineas = [
+        "Informe de ingesta",
+        f"  Documentos procesados: {len(informe.resultados)}",
+        f"  Indexados: {len(informe.con_estado(ESTADO_INDEXADO))}",
+        f"  Vectorizados con el modelo activo: {len(informe.con_estado(ESTADO_VECTORIZADO))}",
+        f"  Omitidos: {len(informe.con_estado(ESTADO_OMITIDO))}",
+        f"  Sin texto legible: {len(informe.con_estado(ESTADO_SIN_TEXTO))}",
+        f"  Con error: {len(informe.con_estado(ESTADO_ERROR))}",
+        f"  Fragmentos creados: {informe.fragmentos_creados}",
+        f"  Fragmentos descartados (tablas): {informe.fragmentos_descartados}",
+        f"  Tiempo total: {informe.segundos:.1f} s",
+    ]
+    for titulo, estados in (
+        ("Omitidos", (ESTADO_OMITIDO, ESTADO_SIN_TEXTO)),
+        ("Con error", (ESTADO_ERROR,)),
+    ):
+        detalle = [r for estado in estados for r in informe.con_estado(estado)]
+        if detalle:
+            lineas.append(f"{titulo}:")
+            lineas += [f"  - {r.nombre_archivo}: {r.motivo}" for r in detalle]
+    return "\n".join(lineas)
+
+
+def _fijar_modelo_activo_si_falta(conexion: psycopg.Connection, nombre_modelo: str) -> None:
+    # La primera ingesta deja activo su modelo; después solo lo cambia activar-modelo (Tarea 15).
+    with conexion.transaction():
+        if repositorio.leer_configuracion(conexion, repositorio.CLAVE_MODELO_ACTIVO) is None:
+            repositorio.escribir_configuracion(conexion, repositorio.CLAVE_MODELO_ACTIVO, nombre_modelo)
+
+
+def _ingestar_fila(
+    conexion: psycopg.Connection,
+    carpeta: Path,
+    fila: FilaManifiesto,
+    proveedor: EmbeddingProvider,
+    extractor: Callable[[Path], list[str]],
+) -> ResultadoIngesta:
+    ruta = carpeta / fila.archivo
+    # Estos dos casos se informan sin escribir en la base: no hay un documento real que registrar.
+    if not ruta.is_file():
+        return ResultadoIngesta(fila.archivo, ESTADO_ERROR, motivo="no existe en la carpeta")
+    if fila.categoria not in CATEGORIAS:
+        motivo = f"categoría desconocida en el manifiesto: {fila.categoria!r}"
+        return ResultadoIngesta(fila.archivo, ESTADO_ERROR, motivo=motivo)
+    tipo = tipo_desde_nombre(fila.archivo)
+    return ingestar_documento(conexion, ruta, fila.categoria, tipo, proveedor, extractor)
 
 
 def ingestar_documento(

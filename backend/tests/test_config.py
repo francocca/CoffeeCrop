@@ -1,8 +1,9 @@
+import os
 from pathlib import Path
 
 import pytest
 
-from conocimiento.config import cargar_config
+from conocimiento.config import cargar_archivo_env, cargar_config
 from conocimiento.errores import (
     DatabaseUnavailableError,
     InvalidQueryError,
@@ -73,3 +74,47 @@ def test_las_excepciones_tienen_su_codigo_y_mensaje(clase, codigo):
 
     assert error.code == codigo
     assert str(error) == "mensaje claro"
+
+
+@pytest.fixture
+def entorno_aislado(monkeypatch):
+    # cargar_archivo_env escribe en os.environ: una copia evita que lo leído pase a otras pruebas.
+    monkeypatch.setattr(os, "environ", dict(os.environ))
+
+
+def test_cargar_archivo_env_lleva_las_variables_al_entorno(tmp_path, entorno_aislado):
+    # Arrange
+    archivo = tmp_path / ".env"
+    archivo.write_text(
+        "# comentario\n"
+        "DATABASE_URL=postgresql://u:clave=con-igual@h:5433/b\n"
+        "\n"
+        "MODELO_EMBEDDINGS = BAAI/bge-m3\n",
+        encoding="utf-8",
+    )
+
+    # Act
+    cargar_archivo_env(archivo)
+
+    # Assert
+    config = cargar_config()
+    assert config.database_url == "postgresql://u:clave=con-igual@h:5433/b"
+    assert config.modelo_embeddings == "BAAI/bge-m3"
+
+
+def test_cargar_archivo_env_no_pisa_variables_ya_definidas(tmp_path, entorno_aislado):
+    archivo = tmp_path / ".env"
+    archivo.write_text("MODELO_EMBEDDINGS=BAAI/bge-m3\n", encoding="utf-8")
+    os.environ["MODELO_EMBEDDINGS"] = "intfloat/multilingual-e5-large"
+
+    cargar_archivo_env(archivo)
+
+    assert cargar_config().modelo_embeddings == "intfloat/multilingual-e5-large"
+
+
+def test_cargar_archivo_env_sin_archivo_no_hace_nada(tmp_path, entorno_aislado):
+    antes = dict(os.environ)
+
+    cargar_archivo_env(tmp_path / "no_existe.env")
+
+    assert dict(os.environ) == antes

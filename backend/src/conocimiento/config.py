@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 RAIZ_PROYECTO = Path(__file__).resolve().parents[3]
+ARCHIVO_ENV = RAIZ_PROYECTO / "backend" / ".env"
 
 # La clave de la base no tiene valor por defecto: viene en DATABASE_URL (ver .env.example).
 _DATABASE_URL = "postgresql://coffecrop@127.0.0.1:5433/coffecrop"
@@ -36,3 +37,14 @@ def cargar_config() -> Config:
         minimo_similitud=float(entorno.get("MINIMO_SIMILITUD", _MINIMO_SIMILITUD)),
         ventaja_boyaca=float(entorno.get("VENTAJA_BOYACA", _VENTAJA_BOYACA)),
     )
+
+
+def cargar_archivo_env(ruta: Path = ARCHIVO_ENV) -> None:
+    """Lleva las líneas CLAVE=valor de backend/.env al entorno, sin pisar variables ya definidas."""
+    if not ruta.exists():
+        return
+    for linea in ruta.read_text(encoding="utf-8").splitlines():
+        linea = linea.strip()
+        if linea and not linea.startswith("#") and "=" in linea:
+            clave, valor = linea.split("=", 1)
+            os.environ.setdefault(clave.strip(), valor.strip())

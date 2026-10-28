@@ -1,8 +1,8 @@
 # Progreso de Implementación — Base de Conocimiento Cafetero
 
 ## Resumen
-- **Tareas completadas:** 12 / 20 (Tarea 13 en revisión)
-- **Tarea actual:** Tarea 13 — Ingesta de la carpeta y comandos de CLI
+- **Tareas completadas:** 13 / 20 (corrección de la Tarea 13 en revisión)
+- **Tarea actual:** corrección de la Tarea 13 (confirmar cada documento); después, Tarea 14
 - **Tiempo invertido:** —
 
 ## Registro de Tareas
@@ -107,7 +107,7 @@ era"); (2) además se quita el número de página (1–3 dígitos) cuando es la 
   - **Gaps:** (a) un documento que quedó en `error` sobre una versión anterior conserva sus fragmentos y vectores, así que la búsqueda los sigue encontrando hasta que se reintente; (b) aún no se probó con un PDF real de punta a punta: eso llega con la Tarea 13 (carpeta y CLI).
   - Sin cambios en dependencias ni en el esquema. Archivos tocados: `ingesta.py`, `test_ingesta.py`, `repositorio.py` / `test_repositorio.py` (las dos funciones de arriba) y este `progress.md`.
 
-- 🔄 **Tarea 13 — Ingesta de la carpeta y comandos de CLI:** lista para auditoría (2026-10-26). Rama: `feat/task-13-ingesta-carpeta-cli`. Implementa US-001, BR-003.
+- ✅ **Tarea 13 — Ingesta de la carpeta y comandos de CLI:** ACEPTADA (2026-10-26, mergeada en el PR #21). Rama: `feat/task-13-ingesta-carpeta-cli`. Implementa US-001, BR-003.
   - `ingesta.py`: `leer_manifiesto(carpeta)` (lee `_manifiesto.csv` con `utf-8-sig` porque trae BOM; admite nombres con comas entre comillas), `tipo_desde_nombre` (`Manual…` → `manual`, el resto → `avance`; `numero_avance` sigue saliendo de `ingestar_documento`), `ingestar_carpeta(conexion, carpeta, proveedor, extractor)` → `InformeIngesta(resultados, segundos)` con totales de fragmentos creados y descartados, y `formatear_informe`, que lista indexados, vectorizados, omitidos y sin texto (con motivo), errores (con motivo) y tiempo total. Cada documento se registra en el log como `[n/total] archivo: estado`.
   - Un archivo del manifiesto que no está en disco, o una categoría fuera de A/B/R/C, se informa como `error` **sin escribir en la base** (no hay un documento real que registrar) y no detiene a los demás. Si falta el manifiesto → `ConocimientoError` con un mensaje claro (el CLI termina con código 2, sin traza).
   - `cli.py` + `__main__.py`: `python -m conocimiento inicializar-db` y `python -m conocimiento ingestar [--carpeta RUTA]` (por defecto `CARPETA_BASE_CONOCIMIENTO`). Códigos de salida: 0 = todo bien, 1 = terminó pero hubo documentos con error, 2 = no pudo correr (carpeta o manifiesto inexistente, base caída). El modelo se carga de forma diferida, así `inicializar-db` no importa `torch`. Solo el logger `conocimiento` queda en INFO; Hugging Face y httpx, en WARNING.
@@ -117,6 +117,12 @@ era"); (2) además se quita el número de página (1–3 dígitos) cuando es la 
   - **Prueba de punta a punta con PDFs reales (cierra el gap de la Tarea 12):** carpeta temporal con los Avances 465 (A) y 271 (B) y una fila de un archivo inexistente, con `multilingual-e5-base` real contra el PostgreSQL de Docker: 2 indexados, 17 fragmentos (máximo 452 tokens, páginas 1–12 y 1–4), 17 vectores de 768 dimensiones, `modelo_activo` fijado, 1 error informado, salida 1, **27,5 s** de ingesta (+ ≈ 60 s de cargar `torch` y el modelo). Al repetir: los 2 omitidos, 0 fragmentos nuevos, 0,1 s. Esos 2 documentos quedaron en la base de desarrollo; la ingesta completa los omitirá.
   - **Gaps:** (a) el tokenizador avisa "516 > 512" al contar textos candidatos que la fragmentación luego descarta; ningún fragmento guardado pasa del objetivo, el aviso es inofensivo; (b) con la salida redirigida en Windows (Git Bash) las tildes se ven mal (`Caf�`) porque Python usa cp1252 fuera de una consola real; en la terminal se ven bien; (c) a ≈ 8,5 fragmentos/s en CPU, los ≈ 8.000–12.000 fragmentos estimados de los 322 PDFs tomarían ≈ 15–25 min.
   - Sin dependencias nuevas ni cambios en el esquema. Archivos tocados: `ingesta.py`, `cli.py`, `__main__.py`, `test_ingesta_carpeta.py` (los de la tarea) y, fuera de la lista, `config.py`, `test_config.py` y `conftest.py` (`cargar_archivo_env`), y este `progress.md`.
+
+- 🔄 **Corrección de la Tarea 13 — cada documento se confirma al terminarlo:** lista para auditoría (2026-10-27). Rama: `fix/task-13-commit-por-documento`.
+  - **Bug encontrado en la ingesta completa:** la conexión no era *autocommit*, así que el primer `SELECT` suelto (`buscar_documento`, antes de la transacción del documento) abría una transacción implícita que nunca se cerraba; cada `transaccion(...)` quedaba como *savepoint* dentro de ella y **nada se confirmaba hasta que el proceso terminaba bien**. La corrida de la noche del 2026-10-26 se detuvo en el documento 263/322 y se perdió todo (en la base solo quedaban los 2 de la prueba del día anterior); PostgreSQL mostraba la sesión `idle in transaction` durante más de 1,5 h. Las pruebas no lo veían porque cada una usa una sola conexión.
+  - **Corrección:** `conectar()` abre la conexión con `autocommit=True`; cada `transaction()` es ahora un `BEGIN`/`COMMIT` real y cada documento queda guardado al terminarlo. El fixture `conexion` de `conftest.py` ya no hace `rollback`/`commit` (no hacen nada en *autocommit*); limpia con `TRUNCATE`, como ya hacía.
+  - **Prueba nueva** (`test_cada_documento_queda_confirmado_sin_esperar_al_final`): la ingesta se interrumpe (`KeyboardInterrupt`) en el segundo documento y otra conexión debe ver el primero ya guardado. **Sin la corrección falla** (`0 == 1`); con ella pasa. `pytest` → 134 en verde; `pytest -m integration` → 61 en verde.
+  - La ingesta completa en curso (iniciada antes de la corrección) guarda todo al terminar bien; las siguientes ya confirman documento por documento. Archivos tocados: `db/conexion.py`, `tests/conftest.py`, `tests/test_ingesta_carpeta.py` y este `progress.md`.
 
 ## Registro de Rechazos
 (ninguno)

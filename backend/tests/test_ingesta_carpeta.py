@@ -2,6 +2,7 @@ import pytest
 
 from conocimiento import cli
 from conocimiento.db import repositorio
+from conocimiento.db.conexion import conectar
 from conocimiento.ingesta import (
     formatear_informe,
     ingestar_carpeta,
@@ -132,6 +133,27 @@ def test_la_primera_ingesta_deja_activo_su_modelo_y_no_lo_cambia_despues(
     # Assert
     activo = repositorio.leer_configuracion(conexion, repositorio.CLAVE_MODELO_ACTIVO)
     assert activo == proveedor.nombre_modelo
+
+
+@pytest.mark.integration
+def test_cada_documento_queda_confirmado_sin_esperar_al_final(
+    conexion, url_db_prueba, carpeta, proveedor
+):
+    # Arrange: el primer documento se guarda; el segundo interrumpe la ingesta (como cerrar el equipo).
+    class ExtractorQueSeInterrumpe(ExtractorSimulado):
+        def __call__(self, ruta):
+            if ruta.name == MANUAL:
+                raise KeyboardInterrupt
+            return super().__call__(ruta)
+
+    # Act
+    with pytest.raises(KeyboardInterrupt):
+        ingestar_carpeta(conexion, carpeta, proveedor, ExtractorQueSeInterrumpe())
+
+    # Assert: otra conexión ya ve el primero, aunque la ingesta no terminó.
+    with conectar(url_db_prueba) as otra:
+        assert contar(otra, "documento") == 1
+        assert repositorio.buscar_documento(otra, AVANCE).estado == "indexado"
 
 
 @pytest.mark.integration

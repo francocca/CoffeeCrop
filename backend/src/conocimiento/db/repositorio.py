@@ -153,6 +153,59 @@ def contar_embeddings(
     return conexion.execute(consulta, parametros).fetchone()[0]
 
 
+@dataclass(frozen=True)
+class Resultado:
+    texto: str
+    documento: str
+    pagina_inicio: int
+    pagina_fin: int
+    categoria: str
+    puntaje: float
+
+
+def buscar_similares(
+    conexion: psycopg.Connection,
+    vector: Sequence[float],
+    modelo: str,
+    k: int,
+    minimo: float,
+    ventaja_categoria_a: float = 0.0,
+) -> list[Resultado]:
+    """Fragmentos más parecidos al vector, solo entre los vectores de `modelo` (BR-004).
+
+    El mínimo se aplica a la similitud real (BR-007); la ventaja de la categoría A solo cuenta
+    para ordenar (BR-005), el puntaje devuelto no la incluye.
+    """
+    # MATERIALIZED filtra por modelo y dimensión antes de medir distancias: PostgreSQL no garantiza
+    # el orden de las condiciones de un WHERE, y comparar vectores de otra dimensión es un error.
+    consulta = """
+        WITH candidatos AS MATERIALIZED (
+            SELECT fragmento_id, vector FROM embedding
+            WHERE modelo = %(modelo)s AND dimension = %(dimension)s
+        ), puntuados AS (
+            SELECT fragmento_id, 1 - (vector <=> %(q)s) AS similitud FROM candidatos
+        )
+        SELECT f.texto, d.nombre_archivo AS documento, f.pagina_inicio, f.pagina_fin,
+               d.categoria, p.similitud AS puntaje
+        FROM puntuados p
+        JOIN fragmento f ON f.id = p.fragmento_id
+        JOIN documento d ON d.id = f.documento_id
+        WHERE p.similitud >= %(minimo)s
+        ORDER BY p.similitud + CASE WHEN d.categoria = 'A' THEN %(ventaja)s ELSE 0 END DESC, f.id
+        LIMIT %(k)s
+    """
+    parametros = {
+        "modelo": modelo,
+        "dimension": len(vector),
+        "q": Vector(list(vector)),
+        "minimo": minimo,
+        "ventaja": ventaja_categoria_a,
+        "k": k,
+    }
+    with conexion.cursor(row_factory=class_row(Resultado)) as cursor:
+        return cursor.execute(consulta, parametros).fetchall()
+
+
 def leer_configuracion(conexion: psycopg.Connection, clave: str) -> str | None:
     fila = conexion.execute("SELECT valor FROM configuracion WHERE clave = %s", (clave,)).fetchone()
     return fila[0] if fila else None

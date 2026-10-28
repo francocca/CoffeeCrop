@@ -14,7 +14,9 @@ SEGUNDOS_ESPERA_CONEXION = 5
 def conectar(database_url: str | None = None, registrar_vector: bool = True) -> psycopg.Connection:
     url = database_url or cargar_config().database_url
     try:
-        conexion = psycopg.connect(url, connect_timeout=SEGUNDOS_ESPERA_CONEXION)
+        # autocommit: cada transaction() es un BEGIN/COMMIT real. Sin él, la primera consulta suelta
+        # abre una transacción implícita y todo lo demás queda en savepoints que nadie confirma.
+        conexion = psycopg.connect(url, connect_timeout=SEGUNDOS_ESPERA_CONEXION, autocommit=True)
     except psycopg.Error as error:
         raise DatabaseUnavailableError(_mensaje_sin_conexion(url, error)) from error
     if registrar_vector:

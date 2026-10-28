@@ -37,7 +37,5 @@ def conexion(url_db_prueba):
     inicializar_db(url_db_prueba)
     with conectar(url_db_prueba) as conexion_prueba:
         yield conexion_prueba
-        conexion_prueba.rollback()
-        # El rollback no alcanza: conexion.transaction() confirma (COMMIT) si no había otra abierta.
+        # La conexión es autocommit (lo escrito ya está confirmado): se limpia vaciando las tablas.
         conexion_prueba.execute("TRUNCATE documento, configuracion CASCADE")
-        conexion_prueba.commit()
